@@ -376,7 +376,7 @@ for (yr1, yr2) in combinations(year_lst, 2):
     yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
 
 # for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
-pd.Series(yr_tup_n_CF_dic).unstack(-1)
+pd.Series(yr_tup_n_CF_dic).unstack(-1)  # 50 in total
 # out_path = result_path / 'n_rurclust_20km_all2yrpair.csv'
 # pd.DataFrame(pd.Series(yr_tup_n_CF_dic).unstack(-1)).to_csv(out_path)
 
@@ -390,10 +390,64 @@ for (yr1, yr2, yr3) in combinations(year_lst, 3):
     yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
 
 # for CFs that have clusters w/in 20km from 3 years, which are the 3 years?
-yr_tup_n_CF_dic
+pd.Series(yr_tup_n_CF_dic)  # 115 in total
 # check in qgis ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
 # out_path = result_path / 'n_rurclust_20km_all3yrcombo.csv'
 # pd.DataFrame(yr_tup_n_CF_dic, index=['n_CF']).to_csv(out_path)
+
+# %%% overlap among DHS clusters
+
+# exclude urban DHS clusters
+rDHS_gdf = DHS_gdf.loc[DHS_gdf.URBAN_RURA == 'R', :]
+
+# buffer 5km
+rDHS_gdf['geom_bf5km'] = rDHS_gdf.geometry.buffer(5*1000)
+
+# # check areas
+# np.sort(rDHS_gdf.geom_bf5km.area)  # 78413712.26... smaller than expected,
+# # but still 99.8%+ of the expected area, so will use default resolution=16
+# # 78503934.36... when resolution=30
+# # pi*r2 should give 78539816.33
+
+# # write buffered DHS data
+# rDHS_bf5km_gdf = rDHS_gdf.set_geometry('geom_bf5km', drop=True)
+# # out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_rur_00_14_bf5km'
+# # rDHS_bf5km_gdf.to_file(out_path)
+
+# compute, for each 2014 5km-bufferred cluster, % area overlap w/ 2010 
+# 5km-buffered clusters, 2005, and 2000
+rDHS14_gdf = rDHS_gdf.loc[rDHS_gdf.DHSYEAR == 2014, :]
+rDHS14_bf5km_gdf = rDHS14_gdf.set_geometry('geom_bf5km')
+
+year_lst = [2000, 2005, 2010]
+year_arr = np.array(year_lst)
+
+for i, yr in enumerate(year_lst):
+    # all buffers in the YR dissolved into a single geom
+    bf_dissolved = \
+        rDHS_gdf.loc[rDHS_gdf.DHSYEAR == yr, 'geom_bf5km'].unary_union
+    # intersection of each 2014 buffered cluster w/ the geom
+    intersection_s = rDHS14_bf5km_gdf.intersection(bf_dissolved)
+    # percent area intersecting
+    intersect_area_s = intersection_s.area
+    rDHS14_gdf.loc[:, f'pcOvlp5k{str(yr)[-2:]}'] = \
+        (intersect_area_s / rDHS14_gdf.geom_bf5km.area).values
+    # intersect or not
+    intersect_TF_s = intersect_area_s > 0
+    rDHS14_gdf.loc[:, f'ovlp5k{str(yr)[-2:]}'] = intersect_TF_s.values
+
+# # write rural DHS data with intersection info
+# out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_rur_14_ovlp_w_00_10_bf5km'
+# rDHS14_gdf.drop(columns=['geom_bf5km']).to_file(out_path)
+
+# summarize % area overlap
+rDHS14_pcOvlp_df = rDHS14_gdf.loc[:, rDHS14_gdf.columns.str.contains('pcOvlp')]
+rDHS14_hasOvlp_df = rDHS14_gdf.loc[:, rDHS14_gdf.columns.str.contains('ovlp')]
+# # quick stats
+round(rDHS14_hasOvlp_df.mean() * 100, 2)
+# # quick plot
+rDHS14_pcOvlp_df.hist()
+plt.tight_layout()
 
 # %% results & visualizations
 
