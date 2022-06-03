@@ -76,7 +76,7 @@ DHS_gdflst = [gpd.read_file(file) for file in DHS_pathlst]
 # TODO
 
 
-# %% check and clean data
+# %% check, clean, and preprocess data
 
 # %%% CFv1
 
@@ -257,13 +257,28 @@ DHS_gdf = pd.concat(DHS_gdflst)  # long df with all four dfs
 # drop rows with missing location info
 DHS_gdf = DHS_gdf.loc[DHS_gdf.SOURCE != 'MIS', :]
 
+# %%% more preprocessing
 
-# %% process data
+# %%%%
 
 
+# %% analyze data
+
+# helper function
+def count_npt_in_poly(pt_gdf, poly_gdf, polyID_colname):
+    poly_w_ptInPoly_gdf = poly_gdf.sjoin(pt_gdf, 
+                                         how='inner', predicate='contains')
+    npt_in_poly_ser = poly_w_ptInPoly_gdf.groupby(polyID_colname).size()
+    poly_id_ser = poly_gdf.loc[:, polyID_colname]
+    npt_in_eachPoly_ser = npt_in_poly_ser.reindex(poly_id_ser,
+                                                  fill_value=0)
+    return npt_in_eachPoly_ser
+
+
+# %%% initial analysis of DHS-2000
 year = 2000
 
-# %%% count # of clusters within buffered CF geoms
+# %%%% count # of clusters within buffered CF geoms
 
 ## wrapped into function: count_npt_in_poly
 # join CF gdf with DHS cluster points within each CF
@@ -276,37 +291,98 @@ n_DHSinAllCF_ser = n_DHSinCF_ser.reindex(CFv1_bf20km_gdf.UniqueID,
                                           fill_value=0)
 
 
-def count_npt_in_poly(pt_gdf, poly_gdf, polyID_colname):
-    poly_w_ptInPoly_gdf = poly_gdf.sjoin(pt_gdf, 
-                                         how='inner', predicate='contains')
-    npt_in_poly_ser = poly_w_ptInPoly_gdf.groupby(polyID_colname).size()
-    poly_id_ser = poly_gdf.loc[:, polyID_colname]
-    npt_in_eachPoly_ser = npt_in_poly_ser.reindex(poly_id_ser,
-                                                  fill_value=0)
-    return npt_in_eachPoly_ser
-
-
+## does the same as the code above
 count_npt_in_poly(DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
                   CFv1_bf20km_gdf, 'UniqueID')
 
-# %%%% count # of URBAN clusters within buffered CF geoms
+# %%%%% count # of URBAN clusters within buffered CF geoms
 n_uCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
                                                  (DHS_gdf.URBAN_RURA=='U'), :],
                                      CFv1_bf20km_gdf, 'UniqueID')
 
-# %%%% count # of RURAL clusters within buffered CF geoms
+# %%%%% count # of RURAL clusters within buffered CF geoms
 n_rCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
                                                  (DHS_gdf.URBAN_RURA=='R'), :],
                                      CFv1_bf20km_gdf, 'UniqueID')
 
 
-# %%% find closest cluster to each CF centroid and calculate the distance
+# %%%% find closest cluster to each CF centroid and calculate the distance
 CFctrd_nearstDHS_gdf = CFv1_ctrd_gdf.sjoin_nearest(
     DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
     how='left', distance_col='dist2closestCluster_m')
 
 
-# %% results
+# %%% coverage of DHS clusters
+
+# %%%% count # of 2000,05,10,14 rural DHS clusters w/in 20km of CF
+
+year_lst = [2000, 2005, 2010, 2014]
+year_arr = np.array(year_lst)
+urban_rural = 'R'
+for i, yr in enumerate(year_lst):
+    clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
+                            (DHS_gdf.URBAN_RURA == urban_rural), :]
+    
+    n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
+                                          CFv1_bf20km_gdf, 'UniqueID')
+    CFv1_gdf[[f'n{str(yr)[-2:]}rC20k']] = \
+        n_clust_in_CF_ser.reset_index(drop=True)
+
+    has_clust_in_CF_ser = n_clust_in_CF_ser > 0
+    CFv1_gdf[[f'has{str(yr)[-2:]}rC20k']] = \
+        has_clust_in_CF_ser.reset_index(drop=True)
+    
+# # write CF data with count info
+# out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_clustIn20km'
+# CFv1_gdf.drop(columns=['geom_bf20km', 'geom_centroid']).to_file(out_path)
+# # Column names longer than 10 characters will be truncated when saved to ESRI Shapefile.
+
+# %%%% number of years & which years the CFs have DHS clusters w/in 20km
+
+CFhasClust_gdf = CFv1_gdf.loc[:, CFv1_gdf.columns.str.contains('has')]
+
+# number of years the CFs have DHS clusters w/in 20km
+n_yr_hasClust = CFhasClust_gdf.sum('columns')
+
+# no. of CFs that have clusters w/in 20km from all 4 years
+sum(n_yr_hasClust == 4)
+# no. of CFs that have clusters w/in 20km from at least 2 years
+sum(n_yr_hasClust >= 2)
+
+from itertools import combinations
+
+
+def yr2colname(yr):
+    return f'has{str(yr)[-2:]}rC20k'
+
+
+
+def has_clust_from_yrs(row_ser, yr_tup):
+    return (row_ser == has10_arr(yr_tup)).all()
+def has10_arr(yr_tup):
+    arr = np.array([0, 0, 0, 0])
+    idx = np.where((year_arr == yr_tup[0]) |
+                   (year_arr == yr_tup[1]))
+    arr[idx] = 1
+    return arr
+
+yr_tup_n_clust_dic = {}
+for (yr1, yr2) in combinations(year_lst, 2):
+    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+                                                     axis='columns',
+                                                     args=[(yr1, yr2)])
+    print(has_clust_from_yrs_TF_ser)
+    yr_tup_n_clust_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
+    # ( \
+    #     (CFhasClust_gdf[yr2colname(2000)] == (2000 in (yr1, yr2))) & \
+    #     (CFhasClust_gdf[yr2colname(2005)] == (2005 in (yr1, yr2))) & \
+    #     (CFhasClust_gdf[yr2colname(2010)] == (2010 in (yr1, yr2))) & \
+    #     (CFhasClust_gdf[yr2colname(2014)] == (2014 in (yr1, yr2)))
+    #     ).sum()
+# for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
+pd.Series(yr_tup_n_clust_dic).unstack(-1)
+
+# %% results & visualizations
 
 # %%% histogram: size of community forests
 
