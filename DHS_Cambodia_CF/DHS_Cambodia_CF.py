@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from itertools import combinations
 from pathlib import Path
 
 sns.set_theme()  # style="whitegrid")
@@ -56,6 +57,7 @@ def find_duplicate_geom(gdf, id_colname, decimal=1, geom_colname='geometry'):
 # code_path = Path(__file__)
 code_path = Path('/Users/apple/Desktop/SIG/DISES/DHS_Cambodia_CF')
 datafd_path = code_path.parent / 'data'
+result_path = code_path / 'results'
 
 # community forests (CF)
 CF_path = datafd_path / 'CF' / 'Cambodia' / 'CF layer of Cambodia' / \
@@ -349,38 +351,49 @@ sum(n_yr_hasClust == 4)
 # no. of CFs that have clusters w/in 20km from at least 2 years
 sum(n_yr_hasClust >= 2)
 
-from itertools import combinations
-
 
 def yr2colname(yr):
     return f'has{str(yr)[-2:]}rC20k'
 
 
-
 def has_clust_from_yrs(row_ser, yr_tup):
     return (row_ser == has10_arr(yr_tup)).all()
+
+
 def has10_arr(yr_tup):
     arr = np.array([0, 0, 0, 0])
-    idx = np.where((year_arr == yr_tup[0]) |
-                   (year_arr == yr_tup[1]))
-    arr[idx] = 1
+    for yr in yr_tup:
+        arr[np.where(year_arr == yr)] = 1
     return arr
 
-yr_tup_n_clust_dic = {}
+
+# count CF that has clusters from each combination of 2 years
+yr_tup_n_CF_dic = {}
 for (yr1, yr2) in combinations(year_lst, 2):
     has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
                                                      axis='columns',
                                                      args=[(yr1, yr2)])
-    print(has_clust_from_yrs_TF_ser)
-    yr_tup_n_clust_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
-    # ( \
-    #     (CFhasClust_gdf[yr2colname(2000)] == (2000 in (yr1, yr2))) & \
-    #     (CFhasClust_gdf[yr2colname(2005)] == (2005 in (yr1, yr2))) & \
-    #     (CFhasClust_gdf[yr2colname(2010)] == (2010 in (yr1, yr2))) & \
-    #     (CFhasClust_gdf[yr2colname(2014)] == (2014 in (yr1, yr2)))
-    #     ).sum()
+    yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
+
 # for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
-pd.Series(yr_tup_n_clust_dic).unstack(-1)
+pd.Series(yr_tup_n_CF_dic).unstack(-1)
+# out_path = result_path / 'n_rurclust_20km_all2yrpair.csv'
+# pd.DataFrame(pd.Series(yr_tup_n_CF_dic).unstack(-1)).to_csv(out_path)
+
+
+# count CF that has clusters from each combination of 3 years
+yr_tup_n_CF_dic = {}
+for (yr1, yr2, yr3) in combinations(year_lst, 3):
+    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+                                                     axis='columns',
+                                                     args=[(yr1, yr2, yr3)])
+    yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
+
+# for CFs that have clusters w/in 20km from 3 years, which are the 3 years?
+yr_tup_n_CF_dic
+# check in qgis ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
+# out_path = result_path / 'n_rurclust_20km_all3yrcombo.csv'
+# pd.DataFrame(yr_tup_n_CF_dic, index=['n_CF']).to_csv(out_path)
 
 # %% results & visualizations
 
