@@ -118,7 +118,7 @@ DHS_gdflst = [gpd.read_file(file) for file in DHS_pathlst]
 # %%%% buffered CF
 
 # buffer
-CFv1_gdf['geom_bf20km'] = CFv1_gdf.geometry.buffer(20*1000)
+CFv1_gdf.loc[:, 'geom_bf20km'] = CFv1_gdf.geometry.buffer(20*1000)
 
 # # check multipolygons
 # np.unique(CFv1_gdf.geom_bf20km.geom_type)  # only Polygon
@@ -144,7 +144,7 @@ CFv1_bf20km_gdf = CFv1_gdf.set_geometry('geom_bf20km', drop=True)
 # %%%% centroid of CF
 
 # compute centroids
-CFv1_gdf['geom_centroid'] = CFv1_gdf.geometry.centroid
+CFv1_gdf.loc[:, 'geom_centroid'] = CFv1_gdf.geometry.centroid
 
 # # check multipolygons
 # np.unique(CFv1_gdf.geom_centroid.geom_type)  # only Point
@@ -278,70 +278,73 @@ def count_npt_in_poly(pt_gdf, poly_gdf, polyID_colname):
 
 
 # %%% initial analysis of DHS-2000
-year = 2000
+# year = 2000
 
-# %%%% count # of clusters within buffered CF geoms
+# # %%%% count # of clusters within buffered CF geoms
 
-## wrapped into function: count_npt_in_poly
-# join CF gdf with DHS cluster points within each CF
-CFbf_DHSinCF_gdf = CFv1_bf20km_gdf.sjoin(DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
-                                          how='inner', predicate='contains')
-# count # of clusters for CFs with clusters near them
-n_DHSinCF_ser = CFbf_DHSinCF_gdf.groupby('UniqueID').size()
-# count # of clusters for each CF id
-n_DHSinAllCF_ser = n_DHSinCF_ser.reindex(CFv1_bf20km_gdf.UniqueID,
-                                          fill_value=0)
-
-
-## does the same as the code above
-count_npt_in_poly(DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
-                  CFv1_bf20km_gdf, 'UniqueID')
-
-# %%%%% count # of URBAN clusters within buffered CF geoms
-n_uCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
-                                                 (DHS_gdf.URBAN_RURA=='U'), :],
-                                     CFv1_bf20km_gdf, 'UniqueID')
-
-# %%%%% count # of RURAL clusters within buffered CF geoms
-n_rCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
-                                                 (DHS_gdf.URBAN_RURA=='R'), :],
-                                     CFv1_bf20km_gdf, 'UniqueID')
+# ## wrapped into function: count_npt_in_poly
+# # join CF gdf with DHS cluster points within each CF
+# CFbf_DHSinCF_gdf = CFv1_bf20km_gdf.sjoin(DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
+#                                           how='inner', predicate='contains')
+# # count # of clusters for CFs with clusters near them
+# n_DHSinCF_ser = CFbf_DHSinCF_gdf.groupby('UniqueID').size()
+# # count # of clusters for each CF id
+# n_DHSinAllCF_ser = n_DHSinCF_ser.reindex(CFv1_bf20km_gdf.UniqueID,
+#                                           fill_value=0)
 
 
-# %%%% find closest cluster to each CF centroid and calculate the distance
-CFctrd_nearstDHS_gdf = CFv1_ctrd_gdf.sjoin_nearest(
-    DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
-    how='left', distance_col='dist2closestCluster_m')
+# ## does the same as the code above
+# count_npt_in_poly(DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
+#                   CFv1_bf20km_gdf, 'UniqueID')
+
+# # %%%%% count # of URBAN clusters within buffered CF geoms
+# n_uCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
+#                                                  (DHS_gdf.URBAN_RURA=='U'), :],
+#                                      CFv1_bf20km_gdf, 'UniqueID')
+
+# # %%%%% count # of RURAL clusters within buffered CF geoms
+# n_rCLUSTinCF_ser = count_npt_in_poly(DHS_gdf.loc[(DHS_gdf.DHSYEAR==year) &
+#                                                  (DHS_gdf.URBAN_RURA=='R'), :],
+#                                      CFv1_bf20km_gdf, 'UniqueID')
+
+
+# # %%%% find closest cluster to each CF centroid and calculate the distance
+# CFctrd_nearstDHS_gdf = CFv1_ctrd_gdf.sjoin_nearest(
+#     DHS_gdf.loc[DHS_gdf.DHSYEAR==year, :],
+#     how='left', distance_col='dist2closestCluster_m')
 
 
 # %%% coverage of DHS clusters
 
 # %%%% count # of 2000,05,10,14 rural DHS clusters w/in 20km of CF
+# also count # of 2000,05,10,14 urban DHS clusters w/in 20km of CF
 
 year_lst = [2000, 2005, 2010, 2014]
 year_arr = np.array(year_lst)
-urban_rural = 'R'
 for i, yr in enumerate(year_lst):
-    clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
-                            (DHS_gdf.URBAN_RURA == urban_rural), :]
+    for urban_rural in ['R', 'U']:
+        clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
+                                (DHS_gdf.URBAN_RURA == urban_rural), :]
+        
+        n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
+                                              CFv1_bf20km_gdf, 'UniqueID')
+        CFv1_gdf.loc[:, f'n{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
+            n_clust_in_CF_ser.values
     
-    n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
-                                          CFv1_bf20km_gdf, 'UniqueID')
-    CFv1_gdf[[f'n{str(yr)[-2:]}rC20k']] = \
-        n_clust_in_CF_ser.reset_index(drop=True)
-
-    has_clust_in_CF_ser = n_clust_in_CF_ser > 0
-    CFv1_gdf[[f'has{str(yr)[-2:]}rC20k']] = \
-        has_clust_in_CF_ser.reset_index(drop=True)
+        has_clust_in_CF_ser = n_clust_in_CF_ser > 0
+        CFv1_gdf.loc[:, f'has{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
+            has_clust_in_CF_ser.values
     
 # # write CF data with count info
-# out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_clustIn20km'
+# out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_ruClustIn20km'  # rcClust: rural and urban clusters
 # CFv1_gdf.drop(columns=['geom_bf20km', 'geom_centroid']).to_file(out_path)
 # # Column names longer than 10 characters will be truncated when saved to ESRI Shapefile.
 
 # %%%% number of years & which years the CFs have DHS clusters w/in 20km
 
-CFhasClust_gdf = CFv1_gdf.loc[:, CFv1_gdf.columns.str.contains('has')]
+ur = 'u'
+CFhasClust_gdf = CFv1_gdf.loc[:, CFv1_gdf.columns.str.contains('has') & \
+                                 CFv1_gdf.columns.str.contains(f'{ur}C')]
 
 # number of years the CFs have DHS clusters w/in 20km
 n_yr_hasClust = CFhasClust_gdf.sum('columns')
@@ -352,8 +355,8 @@ sum(n_yr_hasClust == 4)
 sum(n_yr_hasClust >= 2)
 
 
-def yr2colname(yr):
-    return f'has{str(yr)[-2:]}rC20k'
+# def yr2colname(yr):
+#     return f'has{str(yr)[-2:]}rC20k'
 
 
 def has_clust_from_yrs(row_ser, yr_tup):
@@ -376,8 +379,11 @@ for (yr1, yr2) in combinations(year_lst, 2):
     yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
 
 # for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
-pd.Series(yr_tup_n_CF_dic).unstack(-1)  # 50 in total
+pd.Series(yr_tup_n_CF_dic).unstack(-1)  
+# pd.Series(yr_tup_n_CF_dic).unstack(-1).sum().sum()  # 50 in total for rural
+# 37 in total for urban
 # out_path = result_path / 'n_rurclust_20km_all2yrpair.csv'
+# out_path = result_path / 'n_urbclust_20km_all2yrpair.csv'
 # pd.DataFrame(pd.Series(yr_tup_n_CF_dic).unstack(-1)).to_csv(out_path)
 
 
@@ -390,18 +396,22 @@ for (yr1, yr2, yr3) in combinations(year_lst, 3):
     yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
 
 # for CFs that have clusters w/in 20km from 3 years, which are the 3 years?
-pd.Series(yr_tup_n_CF_dic)  # 115 in total
-# check in qgis ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
+pd.Series(yr_tup_n_CF_dic)  # 115 in total for rural, 22 for urban
+# check in qgis: rural: ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
+# urban: ("has00uC20k" = 1) and ("has05uC20k" = 1) and ("has10uC20k" = 1) and ("has14uC20k" = 0)
 # out_path = result_path / 'n_rurclust_20km_all3yrcombo.csv'
+# out_path = result_path / 'n_urbclust_20km_all3yrcombo.csv'
 # pd.DataFrame(yr_tup_n_CF_dic, index=['n_CF']).to_csv(out_path)
 
 # %%% overlap among DHS clusters
 
-# exclude urban DHS clusters
-rDHS_gdf = DHS_gdf.loc[DHS_gdf.URBAN_RURA == 'R', :]
+urban_rural = 'U'
+# urban/rural DHS clusters  # rDHS should be ruralORurbanDHS
+rDHS_gdf = DHS_gdf.loc[DHS_gdf.URBAN_RURA == urban_rural, :]
 
 # buffer 5km
-rDHS_gdf['geom_bf5km'] = rDHS_gdf.geometry.buffer(5*1000)
+bf5km_rDHS_s = rDHS_gdf.geometry.buffer(5*1000)
+rDHS_gdf.loc[:, 'geom_bf5km'] = bf5km_rDHS_s
 
 # # check areas
 # np.sort(rDHS_gdf.geom_bf5km.area)  # 78413712.26... smaller than expected,
@@ -409,12 +419,13 @@ rDHS_gdf['geom_bf5km'] = rDHS_gdf.geometry.buffer(5*1000)
 # # 78503934.36... when resolution=30
 # # pi*r2 should give 78539816.33
 
-# # write buffered DHS data
+# write buffered DHS data
 # rDHS_bf5km_gdf = rDHS_gdf.set_geometry('geom_bf5km', drop=True)
 # # out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_rur_00_14_bf5km'
-# # rDHS_bf5km_gdf.to_file(out_path)
+# out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_urb_00_14_bf5km'
+# rDHS_bf5km_gdf.to_file(out_path)
 
-# compute, for each 2014 5km-bufferred cluster, % area overlap w/ 2010 
+# compute, for each 2014 5km-bufferred cluster, % area overlap w/ 2010
 # 5km-buffered clusters, 2005, and 2000
 rDHS14_gdf = rDHS_gdf.loc[rDHS_gdf.DHSYEAR == 2014, :]
 rDHS14_bf5km_gdf = rDHS14_gdf.set_geometry('geom_bf5km')
@@ -436,18 +447,34 @@ for i, yr in enumerate(year_lst):
     intersect_TF_s = intersect_area_s > 0
     rDHS14_gdf.loc[:, f'ovlp5k{str(yr)[-2:]}'] = intersect_TF_s.values
 
-# # write rural DHS data with intersection info
-# out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_rur_14_ovlp_w_00_10_bf5km'
+# write rural DHS data with intersection info
+# # out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_rur_14_ovlp_w_00_10_bf5km'
+# out_path = datafd_path/'DHS'/'Cambodia'/'geog'/'KH_urb_14_ovlp_w_00_10_bf5km'
 # rDHS14_gdf.drop(columns=['geom_bf5km']).to_file(out_path)
 
 # summarize % area overlap
 rDHS14_pcOvlp_df = rDHS14_gdf.loc[:, rDHS14_gdf.columns.str.contains('pcOvlp')]
 rDHS14_hasOvlp_df = rDHS14_gdf.loc[:, rDHS14_gdf.columns.str.contains('ovlp')]
-# # quick stats
+# %%%%% quick stats
+# % of all u/r 2014 clusters overlap with u/r clusters from YYYY
+rDHS14_hasOvlp_df.columns = \
+    [f'20{col[-2:]}' for col in rDHS14_hasOvlp_df.columns]
 round(rDHS14_hasOvlp_df.mean() * 100, 2)
-# # quick plot
-rDHS14_pcOvlp_df.hist()
-plt.tight_layout()
+# %%%%% quick plot
+# histogram: number of 2014 u/r clusters vs % area overlap
+# w/ 5km-buffered u/r clusters from YYYY
+fig, ax = plt.subplots(1, 3, sharey=True, figsize=(12,3))
+rDHS14_pcOvlp_df.columns = \
+    [f'20{col[-2:]}' for col in rDHS14_pcOvlp_df.columns]
+(rDHS14_pcOvlp_df * 100).hist(ax=ax)
+axx = fig.add_subplot(111, frameon=False)  # add a big axis, hide frame
+# hide tick and tick label of the big axis
+plt.tick_params(labelcolor='none', which='both',
+                top=False, bottom=False, left=False, right=False)
+plt.xlabel('% area overlap w/ 5km-buffered clusters from YYYY')
+plt.ylabel('number of 2014 clusters')
+plt.grid(False)
+
 
 # %% results & visualizations
 
