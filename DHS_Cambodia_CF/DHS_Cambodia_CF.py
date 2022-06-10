@@ -242,7 +242,7 @@ DHS_gdf = pd.concat(DHS_gdflst)  # long df with all four dfs
 # DHS_gdf.loc[~DHS_gdf.geometry.is_valid, :]  # all valid
 
 # # check duplicate geom
-# find_duplicate_geom(DHS_gdf, 'DHSID')  # about a dozen, 
+# find_duplicate_geom(DHS_gdf, 'DHSID')  # about a dozen,
 # # but no more after dropping rows w/ MIS in SOURCE col
 # # duplicates within each year?
 # for i,gdf in enumerate(DHS_gdflst):
@@ -250,7 +250,7 @@ DHS_gdf = pd.concat(DHS_gdflst)  # long df with all four dfs
 #     print(np.unique(gdf.DHSYEAR))
 #     print(find_duplicate_geom(gdf, 'DHSID'))
 # # 2005
-# # ['KH200500000042', 'KH200500000180', 'KH200500000210', 'KH200500000323', 
+# # ['KH200500000042', 'KH200500000180', 'KH200500000210', 'KH200500000323',
 # # 'KH200500000389', 'KH200500000400', 'KH200500000407', 'KH200500000513']
 # # 2010
 # # ['KH201000000386', 'KH201000000387', 'KH201000000498']
@@ -268,7 +268,7 @@ DHS_gdf = DHS_gdf.loc[DHS_gdf.SOURCE != 'MIS', :]
 
 # helper function
 def count_npt_in_poly(pt_gdf, poly_gdf, polyID_colname):
-    poly_w_ptInPoly_gdf = poly_gdf.sjoin(pt_gdf, 
+    poly_w_ptInPoly_gdf = poly_gdf.sjoin(pt_gdf,
                                          how='inner', predicate='contains')
     npt_in_poly_ser = poly_w_ptInPoly_gdf.groupby(polyID_colname).size()
     poly_id_ser = poly_gdf.loc[:, polyID_colname]
@@ -325,16 +325,16 @@ for i, yr in enumerate(year_lst):
     for urban_rural in ['R', 'U']:
         clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
                                 (DHS_gdf.URBAN_RURA == urban_rural), :]
-        
-        n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
+
+        n_clust_in_CF_ser = count_npt_in_poly(clust_gdf,
                                               CFv1_bf20km_gdf, 'UniqueID')
         CFv1_gdf.loc[:, f'n{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
             n_clust_in_CF_ser.values
-    
+
         has_clust_in_CF_ser = n_clust_in_CF_ser > 0
         CFv1_gdf.loc[:, f'has{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
             has_clust_in_CF_ser.values
-    
+
 # # write CF data with count info
 # out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_ruClustIn20km'  # rcClust: rural and urban clusters
 # CFv1_gdf.drop(columns=['geom_bf20km', 'geom_centroid']).to_file(out_path)
@@ -373,13 +373,13 @@ def has10_arr(yr_tup):
 # count CF that has clusters from each combination of 2 years
 yr_tup_n_CF_dic = {}
 for (yr1, yr2) in combinations(year_lst, 2):
-    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs,
                                                      axis='columns',
                                                      args=[(yr1, yr2)])
     yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
 
 # for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
-pd.Series(yr_tup_n_CF_dic).unstack(-1)  
+pd.Series(yr_tup_n_CF_dic).unstack(-1)
 # pd.Series(yr_tup_n_CF_dic).unstack(-1).sum().sum()  # 50 in total for rural
 # 37 in total for urban
 # out_path = result_path / 'n_rurclust_20km_all2yrpair.csv'
@@ -390,7 +390,7 @@ pd.Series(yr_tup_n_CF_dic).unstack(-1)
 # count CF that has clusters from each combination of 3 years
 yr_tup_n_CF_dic = {}
 for (yr1, yr2, yr3) in combinations(year_lst, 3):
-    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs,
                                                      axis='columns',
                                                      args=[(yr1, yr2, yr3)])
     yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
@@ -500,7 +500,7 @@ f"{round(percCF_hasDHS, 1)}% ({nCF_hasDHS}/{nCF_tot}) community forests have at 
 
 # %%%% raw area
 plot_df = pd.DataFrame({'area': CFarea_ser,
-                        'has_clust': 
+                        'has_clust':
                             (n_DHSinAllCF_ser > 0).reset_index(drop=True)})
 # %%%%% calculate mean, sd, median
 plot_df.groupby('has_clust').describe().round(2).T
@@ -514,10 +514,10 @@ rdf = pd.DataFrame({'area': CFarea_ser,
                     'has_rural_clust': (n_rCLUSTinCF_ser > 0).reset_index(drop=True)})
 rdf = rdf.groupby('has_rural_clust').describe().round(2).T
 # rdf.to_csv('Desktop/rural.csv')
-
+ 
 # %%%% log area
 plot_df = pd.DataFrame({'area': np.log(CFarea_ser),
-                        'has_clust': 
+                        'has_clust':
                             (n_DHSinAllCF_ser > 0).reset_index(drop=True)})
 
 # %%%% plot
@@ -566,20 +566,20 @@ ax.set_title(year)
 # %%%% plot
 fig, ax = plt.subplots(1)
 ax.hist(CFctrd_nearstDHS_gdf.dist2closestCluster_m / 1000, bins=20)
-ax.set_xlabel('''distance between community forest centroid 
+ax.set_xlabel('''distance between community forest centroid
               and its closest cluster (km)''')
 ax.set_ylabel('number of community forests')
 ax.set_title(year)
 
 
-# %%% scatterplot: distance between community forest centroid and 
+# %%% scatterplot: distance between community forest centroid and
 # its closest cluster (x axis) vs CF size (y axis)
 # %%%% plot
 fig, ax = plt.subplots(1)
 plt.scatter(CFctrd_nearstDHS_gdf.dist2closestCluster_m / 1000,
             CFarea_ser,
             s=.5)
-ax.set_xlabel('''distance between community forest centroid 
+ax.set_xlabel('''distance between community forest centroid
               and its closest cluster (km)''')
 ax.set_ylabel('area of community forest (ha)')
 ax.set_title(year)
@@ -588,36 +588,7 @@ fig, ax = plt.subplots(1)
 plt.scatter(CFctrd_nearstDHS_gdf.dist2closestCluster_m / 1000,
             np.log(CFarea_ser),
             s=.5)
-ax.set_xlabel('''distance between community forest centroid 
+ax.set_xlabel('''distance between community forest centroid
               and its closest cluster (km)''')
 ax.set_ylabel('log area of community forest (ha)')
 ax.set_title(year)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
