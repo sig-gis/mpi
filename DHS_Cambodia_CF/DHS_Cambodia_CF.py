@@ -52,6 +52,7 @@ def find_duplicate_geom(gdf, id_colname, decimal=1, geom_colname='geometry'):
     return dupids
 
 
+
 # %% read in data
 
 # code_path = Path(__file__)
@@ -514,7 +515,7 @@ rdf = pd.DataFrame({'area': CFarea_ser,
                     'has_rural_clust': (n_rCLUSTinCF_ser > 0).reset_index(drop=True)})
 rdf = rdf.groupby('has_rural_clust').describe().round(2).T
 # rdf.to_csv('Desktop/rural.csv')
- 
+
 # %%%% log area
 plot_df = pd.DataFrame({'area': np.log(CFarea_ser),
                         'has_clust':
