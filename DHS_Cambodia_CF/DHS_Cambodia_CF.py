@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from itertools import combinations
+from collections import defaultdict
 from pathlib import Path
 
 sns.set_theme()  # style="whitegrid")
@@ -343,47 +344,33 @@ def count_npt_in_poly(pt_gdf, poly_gdf, polyID_colname):
 
 # %%%% count # of 2000,05,10,14 rural DHS clusters w/in 20km of CF
 # also count # of 2000,05,10,14 urban DHS clusters w/in 20km of CF
+# also count # of 00,05,10,14 rural & urban clusters w/in 5km & 10km of CF
 
 year_lst = [2000, 2005, 2010, 2014]
 year_arr = np.array(year_lst)
-for i, yr in enumerate(year_lst):
-    for urban_rural in ['R', 'U']:
-        clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
-                                (DHS_gdf.URBAN_RURA == urban_rural), :]
+
+for buff_km in buff_km_lst:
+    CF_bf_gdf = CF_bf_gdf_dic[buff_km]
+    for i, yr in enumerate(year_lst):
+        for urban_rural in ['R', 'U']:
+            clust_gdf = DHS_gdf.loc[(DHS_gdf.DHSYEAR == yr) &
+                                    (DHS_gdf.URBAN_RURA == urban_rural), :]
+            
+            n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
+                                                  CF_bf_gdf, 'UniqueID')
+                                                  # CFv1_bf20km_gdf, 'UniqueID')
+            CFv1_gdf.loc[:, f'n{str(yr)[-2:]}{urban_rural.lower()}C{buff_km}k'] = \
+                n_clust_in_CF_ser.values
         
-        n_clust_in_CF_ser = count_npt_in_poly(clust_gdf, 
-                                              CFv1_bf20km_gdf, 'UniqueID')
-        CFv1_gdf.loc[:, f'n{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
-            n_clust_in_CF_ser.values
-    
-        has_clust_in_CF_ser = n_clust_in_CF_ser > 0
-        CFv1_gdf.loc[:, f'has{str(yr)[-2:]}{urban_rural.lower()}C20k'] = \
-            has_clust_in_CF_ser.values
-    
-# # write CF data with count info
-# out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_ruClustIn20km'  # rcClust: rural and urban clusters
-# CFv1_gdf.drop(columns=['geom_bf20km', 'geom_centroid']).to_file(out_path)
-# # Column names longer than 10 characters will be truncated when saved to ESRI Shapefile.
+            has_clust_in_CF_ser = n_clust_in_CF_ser > 0
+            CFv1_gdf.loc[:, f'has{str(yr)[-2:]}{urban_rural.lower()}C{buff_km}k'] = \
+                has_clust_in_CF_ser.values
 
 # %%%% number of years & which years the CFs have DHS clusters w/in 20km
-
-ur = 'u'
-CFhasClust_gdf = CFv1_gdf.loc[:, CFv1_gdf.columns.str.contains('has') & \
-                                 CFv1_gdf.columns.str.contains(f'{ur}C')]
-
-# number of years the CFs have DHS clusters w/in 20km
-n_yr_hasClust = CFhasClust_gdf.sum('columns')
-
-# no. of CFs that have clusters w/in 20km from all 4 years
-sum(n_yr_hasClust == 4)
-# no. of CFs that have clusters w/in 20km from at least 2 years
-sum(n_yr_hasClust >= 2)
+# also w/in 5km and 10km
 
 
-# def yr2colname(yr):
-#     return f'has{str(yr)[-2:]}rC20k'
-
-
+# helper functions
 def has_clust_from_yrs(row_ser, yr_tup):
     return (row_ser == has10_arr(yr_tup)).all()
 
@@ -394,40 +381,133 @@ def has10_arr(yr_tup):
         arr[np.where(year_arr == yr)] = 1
     return arr
 
+# number of years the CFs have DHS clusters w/in 20km, 5km and 10km
+n_CF_dic = defaultdict(list)  
+# {(0,r): [# of CF that has rural cluster from 2+ yrs within 5km buffer,
+           # of CF that has rural cluster from 2+ yrs within 10km buffer,
+           # of CF that has rural cluster from 2+ yrs within 20km buffer],
+#  (0,u): [x, x, x], ...}
+# {0: '# of CF that has rural/urban cluster data from at least 2 time periods \
+# within buffer',
+#  1: '# of CF that has rural/urban cluster data from only 2 time periods \
+# within buffer',
+#  2: '# of CF that has rural/urban cluster data from only 3 time periods \
+# within buffer',
+#  3: '# of CF that has rural/urban cluster data from all 4 time periods \
+# within buffer'}
 
-# count CF that has clusters from each combination of 2 years
-yr_tup_n_CF_dic = {}
-for (yr1, yr2) in combinations(year_lst, 2):
-    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
-                                                     axis='columns',
-                                                     args=[(yr1, yr2)])
-    yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
-
-# for CFs that have clusters w/in 20km from 2 years, which are the 2 years?
-pd.Series(yr_tup_n_CF_dic).unstack(-1)  
-# pd.Series(yr_tup_n_CF_dic).unstack(-1).sum().sum()  # 50 in total for rural
-# 37 in total for urban
-# out_path = result_path / 'n_rurclust_20km_all2yrpair.csv'
-# out_path = result_path / 'n_urbclust_20km_all2yrpair.csv'
-# pd.DataFrame(pd.Series(yr_tup_n_CF_dic).unstack(-1)).to_csv(out_path)
+# create excel writer:
+# number of CF that has rural/urban clusters within X km from
+# each 2 year pair / each 3 year combo
+out_path = str(result_path) + '/' + 'nCF_hasClustFromWhichYears.xlsx'
+writer = pd.ExcelWriter(out_path)
 
 
-# count CF that has clusters from each combination of 3 years
-yr_tup_n_CF_dic = {}
-for (yr1, yr2, yr3) in combinations(year_lst, 3):
-    has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
-                                                     axis='columns',
-                                                     args=[(yr1, yr2, yr3)])
-    yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
+for buff_km in buff_km_lst:
+    for ur in ['r', 'u']:
+        urbrur = {'u': 'urb', 'r': 'rur'}[ur]
 
-# for CFs that have clusters w/in 20km from 3 years, which are the 3 years?
-pd.Series(yr_tup_n_CF_dic)  # 115 in total for rural, 22 for urban
-# check in qgis: rural: ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
-# urban: ("has00uC20k" = 1) and ("has05uC20k" = 1) and ("has10uC20k" = 1) and ("has14uC20k" = 0)
-# out_path = result_path / 'n_rurclust_20km_all3yrcombo.csv'
-# out_path = result_path / 'n_urbclust_20km_all3yrcombo.csv'
-# pd.DataFrame(yr_tup_n_CF_dic, index=['n_CF']).to_csv(out_path)
+        CFhasClust_gdf = \
+            CFv1_gdf.loc[:, CFv1_gdf.columns.str.contains('has') & \
+                            CFv1_gdf.columns.str.contains(f'{ur}C') & \
+                            CFv1_gdf.columns.str.contains(f'{buff_km}k')]
+        # number of years the CFs have DHS clusters w/in X km
+        n_yr_hasClust = CFhasClust_gdf.sum('columns')
+        # add to df
+        CFv1_gdf.loc[:, f'nYrHas{ur.upper()}C{buff_km}k'] = n_yr_hasClust # k
+        # at the end dropped for 2-digit-buff_km b/c it's the 11th character
 
+        # no. of CFs that have clusters w/in X km from all 4 years
+        n_CF_dic[(3, ur)].append(sum(n_yr_hasClust == 4))
+        # no. of CFs that have clusters w/in X km from at least 2 years
+        n_CF_dic[(0, ur)].append(sum(n_yr_hasClust >= 2))
+
+
+        # count CF that has clusters from each combination of 2 years
+        yr_tup_n_CF_dic = {}
+        for (yr1, yr2) in combinations(year_lst, 2):
+            has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+                                                             axis='columns',
+                                                             args=[(yr1, yr2)])
+            yr_tup_n_CF_dic[(yr1, yr2)] = sum(has_clust_from_yrs_TF_ser)
+        
+        # for CFs that have clusters w/in X km from 2 years, 
+        # which are the 2 years?
+        nCF_2yrpair_df = pd.DataFrame(pd.Series(yr_tup_n_CF_dic).unstack(-1))
+        nCF_2yrpair_df.index.name = '2 years available'
+        # write dataframe to excel sheet
+        nCF_2yrpair_df.to_excel(
+            writer, sheet_name=f'{urbrur}clust_{buff_km}km_all2yrpair')
+        
+        # of CF that has rural/urban cluster data from only 2 time periods w/in buffer
+        n_CF_dic[(1, ur)].append(
+            pd.Series(yr_tup_n_CF_dic).unstack(-1).sum().sum())  
+        # 50 in total for rural (20km buffer)
+        # 37 in total for urban (20km buffer) 
+
+
+        # count CF that has clusters from each combination of 3 years
+        yr_tup_n_CF_dic = {}
+        for (yr1, yr2, yr3) in combinations(year_lst, 3):
+            has_clust_from_yrs_TF_ser = CFhasClust_gdf.apply(func=has_clust_from_yrs, 
+                                                             axis='columns',
+                                                             args=[(yr1, yr2, yr3)])
+            yr_tup_n_CF_dic[(yr1, yr2, yr3)] = sum(has_clust_from_yrs_TF_ser)
+        
+        # of CF that has rural/urban cluster data from only 2 time periods w/in buffer
+        n_CF_dic[(2, ur)].append(pd.Series(yr_tup_n_CF_dic).sum()) 
+        # 20km buffer:
+        # 115 in total for rural, 22 for urban
+
+        # for CFs that have clusters w/in X km from 3 years, 
+        # which are the 3 years?
+        nCF_3yrcombo_df = pd.DataFrame(yr_tup_n_CF_dic, index=['n_CF'])
+        nCF_3yrcombo_df.columns = nCF_3yrcombo_df.columns.to_flat_index()
+        missing_yr_df = pd.DataFrame(year_arr[::-1]).T
+        missing_yr_df.index = ['missing year']
+        missing_yr_df.columns = nCF_3yrcombo_df.columns
+        # write dataframe to excel sheet
+        pd.concat([missing_yr_df, nCF_3yrcombo_df]).to_excel(
+            writer, 
+            sheet_name=f'{urbrur}clust_{buff_km}km_all3yrcombo',
+            merge_cells=False)
+
+        # check in qgis (20km buffer): rural: ("has00rC20k" = 1) and ("has05rC20k" = 1) and ("has10rC20k" = 1) and ("has14rC20k" = 0)
+        # urban: ("has00uC20k" = 1) and ("has05uC20k" = 1) and ("has10uC20k" = 1) and ("has14uC20k" = 0)
+
+# save the excel file
+writer.save()
+# write CF data with count info & 'nYrHas{ur.upper()}C{buff_km}k' column
+out_path = datafd_path / 'CF' / 'Cambodia' / 'All_CF_Cambodia_July_2016_DISES_v1_ruClustIn3Bf'  
+# # rcClust: rural and urban clusters, 3Bf: 3 buffers (5,10,20km)
+CFv1_gdf.drop(
+    columns=CFv1_gdf.columns[CFv1_gdf.columns.str.contains('geom_')]
+    ).to_file(out_path)
+
+
+# number of years the CFs have DHS clusters w/in 20km, 5km and 10km
+n_CF_df_rownames_dic = \
+ {0: '# of CF that has rural/urban cluster data from at least 2 time periods \
+within buffer',
+  1: '# of CF that has rural/urban cluster data from only 2 time periods \
+within buffer',
+  2: '# of CF that has rural/urban cluster data from only 3 time periods \
+within buffer',
+  3: '# of CF that has rural/urban cluster data from all 4 time periods \
+within buffer'}
+n_CF_df_dic = {} 
+for i in range(4):
+    for ru in ['r', 'u']:
+        rowname = n_CF_df_rownames_dic[i]
+        rowname = rowname.replace('rural/urban', 
+                                  {'r': 'rural', 'u': 'urban'}[ru])
+        n_CF_df_dic[rowname] = n_CF_dic[(i, ru)]
+
+nCF_df = pd.DataFrame(n_CF_df_dic).T
+nCF_df.columns = buff_km_lst
+nCF_df.index.name = 'buffer size (km):'
+# out_path = result_path / 'nCF_hasClustFromNYears.csv'
+# nCF_df.to_csv(out_path)
 # %%% overlap among DHS clusters
 
 urban_rural = 'U'
