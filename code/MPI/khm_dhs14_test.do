@@ -11,12 +11,12 @@ For further queries, contact: ophi@qeh.ox.ac.uk
 
 clear all 
 set more off
-set maxvar 10000
+*set maxvar 10000
 
-
+cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
-global path_in "../rdta/Cambodia DHS 2014" 	  
-global path_out "cdta"
+global path_in "../../data/DHS/Cambodia/2014" 	  
+global path_out "../../data/MPI/dta"
 global path_ado "ado"
 
 
@@ -35,7 +35,9 @@ global path_ado "ado"
 *** Step 1.1 PR - CHILDREN's RECODE (under 5)
 ********************************************************************************
 
-use "$path_in/KHPR73FL.DTA", clear 
+import spss "$path_in/KHPR73FL.SAV", case(lower)
+//read var. names as lowercase
+*use "$path_in/KHPR73FL.DTA", clear 
 
 
 *** Generate individual unique key variable required for data merging using:
@@ -252,9 +254,9 @@ save "$path_out/KHM14_PR_child.dta", replace
 
 
 	//Erase files from folder:
-erase "$path_out/children_nutri_khm_z_rc.xls"
-erase "$path_out/children_nutri_khm_prev_rc.xls"
-erase "$path_out/children_nutri_khm_z_rc.dta"
+*erase "$path_out/children_nutri_khm_z_rc.xls"
+*erase "$path_out/children_nutri_khm_prev_rc.xls"
+*erase "$path_out/children_nutri_khm_z_rc.dta"
 
 
 ********************************************************************************
@@ -264,7 +266,9 @@ erase "$path_out/children_nutri_khm_z_rc.dta"
 /*The purpose of step 1.2 is to identify children of any age who died in 
 the last 5 years prior to the survey date.*/
 
-use "$path_in/KHBR73FL.dta", clear
+clear
+import spss "$path_in/SAV/KHBR73SV/KHBR73FL.SAV", case(lower)
+*use "$path_in/KHBR73FL.dta", clear
 
 		
 *** Generate individual unique key variable required for data merging
@@ -353,9 +357,10 @@ save "$path_out/KHM14_BR.dta", replace
 *** Step 1.3  IR - WOMEN's RECODE  
 *** (Eligible female 15-49 years in the household)
 ********************************************************************************
-
-
-use "$path_in/KHIR73FL.dta", clear
+	
+clear
+import spss "$path_in/SAV/KHIR73SV/KHIR73FL.SAV", case(lower)
+*use "$path_in/KHIR73FL.dta", clear
 
 	
 *** Generate individual unique key variable required for data merging
