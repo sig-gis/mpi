@@ -252,9 +252,9 @@ save "$path_out/KHM14_PR_child.dta", replace
 
 
 	//Erase files from folder:
-*erase "$path_out/children_nutri_khm_z_rc.xls"
-*erase "$path_out/children_nutri_khm_prev_rc.xls"
-*erase "$path_out/children_nutri_khm_z_rc.dta"
+erase "$path_out/children_nutri_khm_z_rc.xls"
+erase "$path_out/children_nutri_khm_prev_rc.xls"
+erase "$path_out/children_nutri_khm_z_rc.dta"
 
 
 ********************************************************************************
