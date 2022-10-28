@@ -15,7 +15,7 @@ set more off
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
-global path_in "../../data/DHS/Cambodia/2014" 	  
+global path_in "../../data/DHS/Cambodia/STATA" 	  
 global path_out "../../data/MPI/dta"
 global path_ado "ado"
 
@@ -35,9 +35,7 @@ global path_ado "ado"
 *** Step 1.1 PR - CHILDREN's RECODE (under 5)
 ********************************************************************************
 
-import spss "$path_in/KHPR73FL.SAV", case(lower)
-//read var. names as lowercase
-*use "$path_in/KHPR73FL.DTA", clear 
+use "$path_in/KHPR73DT/KHPR73FL.DTA", clear 
 
 
 *** Generate individual unique key variable required for data merging using:
@@ -266,9 +264,7 @@ save "$path_out/KHM14_PR_child.dta", replace
 /*The purpose of step 1.2 is to identify children of any age who died in 
 the last 5 years prior to the survey date.*/
 
-clear
-import spss "$path_in/SAV/KHBR73SV/KHBR73FL.SAV", case(lower)
-*use "$path_in/KHBR73FL.dta", clear
+use "$path_in/KHBR73DT/KHBR73FL.dta", clear
 
 		
 *** Generate individual unique key variable required for data merging
@@ -358,9 +354,8 @@ save "$path_out/KHM14_BR.dta", replace
 *** (Eligible female 15-49 years in the household)
 ********************************************************************************
 	
-clear
-import spss "$path_in/SAV/KHIR73SV/KHIR73FL.SAV", case(lower)
-*use "$path_in/KHIR73FL.dta", clear
+use v001 v002 v003 v005 v012 v201 v206 v207 ///
+using "$path_in/KHIR73DT/KHIR73FL.dta", clear
 
 	
 *** Generate individual unique key variable required for data merging
@@ -394,7 +389,7 @@ save "$path_out/KHM14_IR.dta", replace
 ********************************************************************************
 /*The purpose of step 1.4 is to compute bmi-for-age for girls 15-19 years. */
 
-use "$path_in/KHPR73FL.dta", clear
+use "$path_in/KHPR73DT/KHPR73FL.dta", clear
 
 		
 *** Generate individual unique key variable required for data merging
@@ -569,7 +564,7 @@ erase "$path_out/girl_nutri_khm_z.dta"
 ***(All eligible man: 15-49 years in the household) 
 ********************************************************************************
 
-use "$path_in/KHMR72FL.dta", clear 
+use "$path_in/KHMR72DT/KHMR72FL.dta", clear 
 
 
 *** Generate individual unique key variable required for data merging
@@ -611,7 +606,7 @@ save "$path_out/KHM14_MR.dta", replace
 *** Step 1.7  PR - HOUSEHOLD MEMBER'S RECODE 
 ********************************************************************************
 
-use "$path_in/KHPR73FL.dta", clear
+use "$path_in/KHPR73DT/KHPR73FL.dta", clear
 
 
 *** Generate a household unique key variable at the household level using: 
