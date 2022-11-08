@@ -15,6 +15,7 @@ mpitb set, name(22103101)  ///
 	d3(d_elct d_wtr d_sani d_hsg d_ckfl d_asst, name(ls))
 */
 
+
 svyset psu [pw=weight], strata(strata)
 
 // equal weights among and within domains
@@ -35,14 +36,31 @@ mpi d1(d_cm d_nutr d_satt d_educ  ///
 	w1(0.16666667 0.16666667 0.16666667 0.16666667 0.05555556 0.05555556 0.05555556 0.05555556 0.0555556 0.0555556),  ///
 	cutoff(0.3333)
 
+
 	
 // adapted from Benin_dhs17-18.do	
+********************************************************************************
+*** List of the 10 indicators included in the MPI ***
+********************************************************************************
+gen edu_1 = d_educ
+gen atten_1 = d_satt
+gen cm_1 = d_cm
+gen nutri_1 = d_nutr
+gen elec_1 = d_elct
+gen toilet_1 = d_sani
+gen water_1 = d_wtr
+gen house_1 = d_hsg  
+gen fuel_1 = d_ckfl
+gen asset_1 = d_asst
+
+global est_1 d_educ d_satt d_cm d_nutr d_elct d_sani d_wtr d_hsg d_ckfl d_asst
 ********************************************************************************
 *** List of sample without missing values ***
 ********************************************************************************
 
 foreach j of numlist 1 {
-gen sample_`j' = (d_educ!=. & d_satt!=. & d_cm!=. & d_nutr!=. & d_elct!=. & d_sani!=. & d_wtr!=. & d_hsg!=. & d_ckfl!=. & d_asst!=.)
+gen sample_`j' = (edu_`j'!=. & atten_`j'!=. & cm_`j'!=. & nutri_`j'!=. & elec_`j'!=. & toilet_`j'!=. & water_`j'!=. & house_`j'!=. & fuel_`j'!=. & asset_`j'!=.)
+
 
 replace sample_`j' = . if subsample==0
 	/* Note: If the anthropometric data was collected from a subsample of the 
@@ -63,18 +81,20 @@ gen per_sample_`j' = r(mean)
 *** which takes values 1 if individual is deprived in the particular 
 *** indicator according to deprivation cutoff z as defined during step 2 ***
 ********************************************************************************
+/*
 foreach j of numlist 1 {
 foreach var in ${est_`j'} {  
-	gen	g0`j'_`var' = 1 if `var'==0
+	gen g0`j'_`var' = 1 if `var'==0
 	replace g0`j'_`var' = 0 if `var'==1
 	}
 }
+*/
 	
 *** Raw Headcount Ratios
 foreach j of numlist 1 {
 foreach var in ${est_`j'}   {  
-	sum	g0`j'_`var' if sample_`j'==1 [iw = sample_weight]
-	gen	raw`j'_`var' = r(mean)*100
+	sum g0`j'_`var' if sample_`j'==1 [iw = weight]
+	gen raw`j'_`var' = r(mean)*100
 	lab var raw`j'_`var'  "Raw Headcount: Percentage of people who are deprived in `var'"
 	}
 }
