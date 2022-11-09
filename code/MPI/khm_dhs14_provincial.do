@@ -3,10 +3,17 @@ clear all
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
 global path_data "../../data/MPI/dta"
+global path_out "../../data/MPI/dta"
 
+
+levelsof region, local(regions)
+foreach region in `regions' {
+
+display `region'
 use "$path_data/khm_dhs14.dta", clear 
+keep if region == `region'
 
-keep if region == 1  // Banteay Meanchay
+
 // adapted from Benin_dhs17-18.do	
 ********************************************************************************
 *** List of the 10 indicators included in the MPI ***
@@ -155,4 +162,8 @@ foreach j of numlist 1 {
 	sum c_censured_vector_`j'_33 [iw = weight] if sample_`j'==1
 	gen MPI_`j' = r(mean)
 	lab var MPI_`j' "`j' Multidimensional Poverty Index (MPI = H*A): Range 0 to 1"
+}
+
+
+save "$path_out/khm_dhs14_mpi_rgn`region'.dta", replace
 }
