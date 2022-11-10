@@ -5,6 +5,7 @@ cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 global path_data "../../data/MPI/dta"
 global path_out "../../data/MPI/dta"
 
+use "$path_data/khm_dhs14.dta", clear 
 
 levelsof region, local(regions)
 foreach region in `regions' {
