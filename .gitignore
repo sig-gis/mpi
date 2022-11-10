@@ -10,4 +10,6 @@ code/*
 data/*
 !data/MPI
 
+!output
+
 !.gitignore
