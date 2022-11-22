@@ -15,6 +15,13 @@ datafd_path = code_path.parent.parent / 'data' / 'MPI'
 outfd_path = code_path.parent.parent / 'output' / 'data' 
 
 
+# %%khm dhs14 
+
+# %%% create cluster numbers from ind_id
 df = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14.dta')
 np.unique(df.ind_id // 1000000)
 
+# %%% compare microdata without and with cluster numbers 
+df1 = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14.dta')
+df2 = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14_clustno.dta')
+df2.iloc[:, :-1].equals(df1)
