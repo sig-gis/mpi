@@ -6,7 +6,12 @@ global path_data "../../data/MPI/dta"
 
 use "$path_data/khm_dhs14_clustno.dta", clear 
 
-keep if clust_no == 1
+levelsof clust_no, local(clust_nos)
+foreach clust_no in `clust_nos' {
+
+display `clust_no'
+use "$path_data/khm_dhs14_clustno.dta", clear 
+keep if clust_no == `clust_no'
 
 
 // adapted from Benin_dhs17-18.do	
@@ -162,4 +167,5 @@ foreach j of numlist 1 {
 }
 
 
-save "$path_data/khm_dhs14_mpi_clust1.dta", replace
+save "$path_data/khm_dhs14_mpi_clust`clust_no'.dta", replace
+}
