@@ -41,7 +41,7 @@ gen per_sample_weighted_`j' = r(mean)
 sum sample_`j'
 gen per_sample_`j' = r(mean)
 }
-// 15% of 74 people (11 ppl.) have 1+ variable missing
+// 15% of 74 people (11 ppl.) have 1+ variables missing
 
 ********************************************************************************
 *** Define deprivation matrix 'g0' 
@@ -54,7 +54,7 @@ foreach var in ${est_`j'} {
 	gen g0`j'_`var' = `var'
 	}
 }
-
+// same as edu_1 etc.	
 	
 *** Raw Headcount Ratios
 foreach j of numlist 1 {
