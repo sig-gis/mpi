@@ -168,3 +168,12 @@ foreach j of numlist 1 {
 
 save "$path_out/khm_dhs14_mpi_rgn`region'.dta", replace
 }
+
+
+
+* Standard errors
+forval i=1/19 {
+	use "$path_out/khm_dhs14_mpi_rgn`i'.dta", clear 
+	svyset psu [pw=weight], strata(strata)
+	svy: mean c_censured_vector_1_33
+}
