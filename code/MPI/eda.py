@@ -48,3 +48,25 @@ poor_s = poor_s[df.sample_1 == 1]
 # mpi
 mpi = np.mean(poor_s * c_vec[df.sample_1 == 1])
 mpi
+
+# %%% explore exclusion of raw data from samples
+rawdatafd_path = Path(
+    r'C:\Users\tianc\OneDrive\Documents\SIG\DISES\data\DHS\Cambodia\STATA')
+df = pd.read_stata(rawdatafd_path / 'KHPR73DT' / 'KHPR73FL.dta')
+df.shape
+# 74112 rows
+df.hv102  # "Permanent (de jure) household member"
+sum(df.hv102 == 'no')
+# 804 non-usual residents, excluded from sample
+df.hv042
+# "Households selected as part of nutrition subsample"
+df.hv042.value_counts()
+sum(df.hv042 == 'not selected') / len(df.hv042)
+# 0.3466... not selected, excluded from sample
+# 2/3 selected (48427)
+
+micro_df = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14.dta')
+micro_df.shape  # 47917
+
+sum((df.hv102 == 'yes') & (df.hv042 == 'selected'))
+# 47917!!
