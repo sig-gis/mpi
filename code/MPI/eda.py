@@ -70,3 +70,18 @@ micro_df.shape  # 47917
 
 sum((df.hv102 == 'yes') & (df.hv042 == 'selected'))
 # 47917!!
+
+# %%% who are in the raw data?
+df = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14.dta')  # microdata
+df.columns
+df1 = df[df.psu == 1]  
+# cluster 1, 74 individuals
+assert len(df1.ind_id.unique()) == 74
+len(df1.hh_id.unique())
+# 17 households
+df1.groupby('hh_id').count()
+# number of individuals in each hh
+df1.loc[df1.hh_id == 10023, 'agec4']
+# ages of members of hh10023
+df.agec4.unique()
+# ['18-59', '0-9', '10-17', '60+', NaN] individuals of all ages?

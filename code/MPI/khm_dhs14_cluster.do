@@ -169,3 +169,11 @@ foreach j of numlist 1 {
 
 save "$path_data/khm_dhs14_mpi_clust`clust_no'.dta", replace
 }
+
+
+/*
+* Standard error
+use "$path_out/khm_dhs14_mpi_clust1.dta", clear 
+svyset psu [pw=weight], strata(strata)
+svy: mean c_censured_vector_1_33
+*/
