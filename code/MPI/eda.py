@@ -85,3 +85,9 @@ df1.loc[df1.hh_id == 10023, 'agec4']
 # ages of members of hh10023
 df.agec4.unique()
 # ['18-59', '0-9', '10-17', '60+', NaN] individuals of all ages?
+# missing values?
+df1_row_w_na = df1[df1.isna().any(axis=1)]
+df1_row_w_na.isna().any(axis=0)  # missing values in d_cm & d_nutr
+df1_row_w_na.loc[:, ['hh_id', 'd_cm', 'd_nutr']]
+df1.iloc[35:60, :][['hh_id', 'd_cm', 'd_nutr']]
+# missing values in the whole hh
