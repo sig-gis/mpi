@@ -171,9 +171,9 @@ save "$path_data/khm_dhs14_mpi_clust`clust_no'.dta", replace
 }
 
 
-/*
+
 * Standard error
-use "$path_out/khm_dhs14_mpi_clust1.dta", clear 
-svyset psu [pw=weight], strata(strata)
+use "$path_data/khm_dhs14_mpi_clust1.dta", clear 
+sum weight  // same for all observations
+svyset hh_id
 svy: mean c_censured_vector_1_33
-*/

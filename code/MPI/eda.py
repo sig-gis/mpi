@@ -91,3 +91,20 @@ df1_row_w_na.isna().any(axis=0)  # missing values in d_cm & d_nutr
 df1_row_w_na.loc[:, ['hh_id', 'd_cm', 'd_nutr']]
 df1.iloc[35:60, :][['hh_id', 'd_cm', 'd_nutr']]
 # missing values in the whole hh
+
+# %%% Taylor linearized variance estimation for cluster 1
+df = pd.read_stata(datafd_path / 'dta' / 'khm_dhs14_mpi_clust1.dta')
+df.dropna(inplace=True)
+r = df.MPI_1[0]
+df = df[['hh_id', 'c_censured_vector_1_33']]
+x = df.shape[0]
+m = len(np.unique(df.hh_id))
+x_s = df.groupby('hh_id').count().squeeze()
+y_s = df.groupby('hh_id').sum().squeeze()
+z_s = y_s - r * x_s
+x_1 = sum(x_s)  # x_h where h = strata#
+y = sum(y_s)
+z = y - r * x_1
+var_r = 1/(x*x) * m/(m-1) * ( sum(z_s*z_s) - z*z/m )
+se_r = np.sqrt(var_r)
+se_r
