@@ -32,9 +32,13 @@ for i in range(1,611+1):
         datafd_path / 'dta' / f'khm_dhs14_mpi_{spatial_res}{i}.dta')
     row_df = df.loc[[0], ['psu', 'MPI_1_svy', 'MPI_1_SE', \
                           'MPI_1_low95CI', 'MPI_1_upp95CI']]
+    row_df['tot_samp_ppl'] = df.shape[0]
+    row_df['ppt_samp_ppl_mis'] = (1 - df.per_sample_1[0]) * 100
     mpi_ci_df = pd.concat([mpi_ci_df, row_df])
-    
-    
-mpi_ci_df.columns=['clust_no', 'mpi', 'mpi_SE', 'mpi_lo95CI', 'mpi_up95CI']
-# mpi_ci_df.to_csv(outfd_path / 'mpi_khm_dhs14_clust_CI.csv', index=False)
+
+old_colnames = ['psu', 'MPI_1_svy', 'MPI_1_SE', \
+                'MPI_1_low95CI', 'MPI_1_upp95CI']
+new_colnames = ['clust_no', 'mpi', 'mpi_SE', 'mpi_lo95CI', 'mpi_up95CI']
+mpi_ci_df.rename(columns=dict(zip(old_colnames, new_colnames)), inplace=True)
+# mpi_ci_df.to_csv(outfd_path / 'mpi_khm_dhs14_clust_CI_mis.csv', index=False)
 
