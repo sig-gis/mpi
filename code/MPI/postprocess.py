@@ -26,18 +26,15 @@ mpi_df = pd.DataFrame(mpi_dic.items(), columns=['region_code', 'mpi'])
 
 # %% cluster-level MPI based on Cambodia DHS 2014
 spatial_res = 'clust'
-mpi_dic = {}
+mpi_ci_df = pd.DataFrame()
 for i in range(1,611+1):
     df = pd.read_stata(
         datafd_path / 'dta' / f'khm_dhs14_mpi_{spatial_res}{i}.dta')
-    mpi = df.MPI_1[0]
-    assert len(df.MPI_1_svy.unique()) == 1
-    assert df.MPI_1_svy[0] == mpi
-    if i == 353: 
-        display(df.iloc[0, -3:])
-        
-    mpi_dic[i] = mpi
+    row_df = df.loc[[0], ['psu', 'MPI_1_svy', 'MPI_1_SE', \
+                          'MPI_1_low95CI', 'MPI_1_upp95CI']]
+    mpi_ci_df = pd.concat([mpi_ci_df, row_df])
     
-mpi_df = pd.DataFrame(mpi_dic.items(), columns=['clust_no', 'mpi'])
-# mpi_df.to_csv(outfd_path / 'mpi_khm_dhs14_clust.csv', index=False)
+    
+mpi_ci_df.columns=['clust_no', 'mpi', 'mpi_SE', 'mpi_lo95CI', 'mpi_up95CI']
+# mpi_ci_df.to_csv(outfd_path / 'mpi_khm_dhs14_clust_CI.csv', index=False)
 
