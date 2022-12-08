@@ -31,7 +31,13 @@ for i in range(1,611+1):
     df = pd.read_stata(
         datafd_path / 'dta' / f'khm_dhs14_mpi_{spatial_res}{i}.dta')
     mpi = df.MPI_1[0]
+    assert len(df.MPI_1_svy.unique()) == 1
+    assert df.MPI_1_svy[0] == mpi
+    if i == 353: 
+        display(df.iloc[0, -3:])
+        
     mpi_dic[i] = mpi
     
 mpi_df = pd.DataFrame(mpi_dic.items(), columns=['clust_no', 'mpi'])
 # mpi_df.to_csv(outfd_path / 'mpi_khm_dhs14_clust.csv', index=False)
+
