@@ -11,12 +11,11 @@ For further queries, contact: ophi@qeh.ox.ac.uk
 
 clear all 
 set more off
-set maxvar 10000
 
-
+cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
-global path_in "../rdta/Cambodia DHS 2010" 	  
-global path_out "cdta"
+global path_in "../../data/DHS/Cambodia/STATA" 	  
+global path_out "../../data/MPI/khm_dhs10"
 global path_ado "ado"
 
 	
@@ -35,7 +34,7 @@ global path_ado "ado"
 *** (Children under 5 years) 
 ********************************************************************************
 
-use "$path_in/KHPR61FL.DTA", clear 
+use "$path_in/KHPR61DT/KHPR61FL.DTA", clear 
 
 
 *** Generate individual unique key variable required for data merging using:
@@ -253,7 +252,7 @@ erase "$path_out/children_nutri_khm_z_rc.dta"
 /*The purpose of step 1.2 is to identify children of any age who died in 
 the last 5 years prior to the survey date.*/
 
-use "$path_in/KHBR61FL.dta", clear
+use "$path_in/KHBR61DT/KHBR61FL.dta", clear
 		
 *** Generate individual unique key variable required for data merging
 *** v001=cluster number;  
@@ -340,7 +339,8 @@ save "$path_out/KHM10_BR.dta", replace
 *** (All eligible females 15-49 years in the household)
 ********************************************************************************
 
-use "$path_in/KHIR61FL.dta", clear	
+use v001 v002 v003 v005 v012 v201 v206 v207 ///
+using "$path_in/KHIR61DT/KHIR61FL.dta", clear
 	
 *** Generate individual unique key variable required for data merging
 *** v001=cluster number;  
@@ -368,7 +368,7 @@ save "$path_out/KHM10_IR.dta", replace
 *** (Girls 15-19 years in the household)
 ********************************************************************************
 
-use "$path_in/KHPR61FL.dta", clear 
+use "$path_in/KHPR61DT/KHPR61FL.dta", clear 
 
 		
 *** Generate individual unique key variable required for data merging using:
@@ -537,7 +537,7 @@ erase "$path_out/girl_nutri_khm_z.dta"
 ***(All eligible man: 15-49 years in the household) 
 ********************************************************************************
 
-use "$path_in/KHMR61FL.dta", clear 
+use "$path_in/KHMR61DT/KHMR61FL.dta", clear 
 	
 *** Generate individual unique key variable required for data merging
 	*** mv001=cluster number; 
@@ -573,7 +573,7 @@ the command lines under this section have been removed.*/
 *** Step 1.7  PR - HOUSEHOLD MEMBER'S RECODE 
 ********************************************************************************
 
-use "$path_in/KHPR61FL.dta", clear
+use "$path_in/KHPR61DT/KHPR61FL.dta", clear
 
 
 *** Generate a household unique key variable at the household level using: 
