@@ -2,16 +2,16 @@ clear all
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
-global path_data "../../data/MPI/dta"
-global path_out "../../data/MPI/dta"
+global path_data "../../data/MPI/khm_dhs10"
+global path_out "../../data/MPI/khm_dhs10"
 
-use "$path_data/khm_dhs14.dta", clear 
+use "$path_data/khm_dhs10.dta", clear 
 
 levelsof region, local(regions)
 foreach region in `regions' {
 
 display `region'
-use "$path_data/khm_dhs14.dta", clear 
+use "$path_data/khm_dhs10.dta", clear 
 keep if region == `region'
 
 
@@ -166,14 +166,14 @@ foreach j of numlist 1 {
 }
 
 
-save "$path_out/khm_dhs14_mpi_rgn`region'.dta", replace
+save "$path_out/khm_dhs10_mpi_rgn`region'.dta", replace
 }
 
 
 
 * Standard errors
 forval i=1/19 {
-	use "$path_out/khm_dhs14_mpi_rgn`i'.dta", clear 
+	use "$path_out/khm_dhs10_mpi_rgn`i'.dta", clear 
 	svyset psu [pw=weight], strata(strata)
 	svy: mean c_censured_vector_1_33
 }
