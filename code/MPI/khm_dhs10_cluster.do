@@ -2,15 +2,15 @@ clear all
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
-global path_data "../../data/MPI/dta"
+global path_data "../../data/MPI/khm_dhs10"
 
-use "$path_data/khm_dhs14_clustno.dta", clear 
+use "$path_data/khm_dhs10_clustno.dta", clear 
 
 levelsof clust_no, local(clust_nos)
 foreach clust_no in `clust_nos' {
 
 display `clust_no'
-use "$path_data/khm_dhs14_clustno.dta", clear 
+use "$path_data/khm_dhs10_clustno.dta", clear 
 keep if clust_no == `clust_no'
 
 
@@ -46,7 +46,6 @@ gen per_sample_weighted_`j' = r(mean)
 sum sample_`j'
 gen per_sample_`j' = r(mean)
 }
-// 15% of 74 people (11 ppl.) have 1+ variables missing
 
 ********************************************************************************
 *** Define deprivation matrix 'g0' 
@@ -176,5 +175,5 @@ gen MPI_1_low95CI = table[rownumb(table, "ll"), 1]
 gen MPI_1_upp95CI = table[rownumb(table, "ul"), 1]
 
 
-save "$path_data/khm_dhs14_mpi_clust`clust_no'.dta", replace
+save "$path_data/khm_dhs10_mpi_clust`clust_no'.dta", replace
 }
