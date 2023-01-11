@@ -16,7 +16,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/DHS/Cambodia/STATA" 	  
-global path_out "../../data/MPI/dta"
+global path_out "../../data/MPI/khm_dhs14"
 global path_ado "ado"
 
 
@@ -45,12 +45,12 @@ use "$path_in/KHPR73DT/KHPR73FL.DTA", clear
 gen double ind_id = hv001*1000000 + hv002*100 + hvidx 
 format ind_id %20.0g
 label var ind_id "Individual ID"
-codebook ind_id
+codebook ind_id  // unique identifier of 74122 ppl.
 
 duplicates report ind_id
 
 
-tab hv120,miss	
+tab hv120,miss  // DHS 6 recode manual: Children eligibility for height/weight and hemo  // variables have the same definition and recode map in DHS 5 unless otherwise noted
 	/*5,234 children under 5 are eligible for anthropometric 
 	measurement. */	
 count if hc1!=.
@@ -59,9 +59,9 @@ tab hv105 if hc1!=.
 	/*A cross check with the age in years reveal that all are within the 5 year 
 	age group */
 tab hc13 if hv120==1, miss
-	//5,052 (96.52%) of the 5,234 children have been measured
-tab hc13 if hc3<=9990, miss
-tab hc13 if hc2<=9990, miss
+	//5,052 (96.52%) of the 5,234 children have been measured // weight and height
+tab hc13 if hc3<=9990, miss  // hc3: height(cm) {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
+tab hc13 if hc2<=9990, miss  // hc2: weight, similar comment to 1 line above about hc3: height
 	/*For example, height and weight data is available for all 5,052 children 
 	who have been successfully measured */
 
@@ -90,18 +90,18 @@ tab gender
 
 
 *** Variable: AGE ***
-tab hc1, miss  
+tab hc1, miss  // age in months 
 codebook hc1 
 clonevar age_months = hc1  
 desc age_months
 sum age_months
 
-gen mdate = mdy(hc18, hc17, hc19)
-gen bdate = mdy(hc30, hc16, hc31) if hc16 <= 31
+gen mdate = mdy(hc18, hc17, hc19)  // date measured m, d, yyyy
+gen bdate = mdy(hc30, hc16, hc31) if hc16 <= 31  // birth date
 	//Calculate birth date in days from date of interview
 replace bdate = mdy(hc30, 15, hc31) if hc16 > 31 
 	//If date of birth of child has been expressed as more than 31, we use 15
-gen age = (mdate-bdate)/30.4375 
+gen age = (mdate-bdate)/30.4375  // (age in days when measured / average days in a month =) age in months when measured
 	//Calculate age in months with days expressed as decimals
 sum age	
 	
@@ -117,9 +117,9 @@ tab hc2 if hc2>9990, miss nol
 	//Missing values are 9994 to 9996
 replace weight = . if hc2>=9990 
 	//All missing values or out of range are replaced as "."
-tab	hc13 hc2 if hc2>=9990 | hc2==., miss 
-	//hw13: result of the measurement 
 sum weight
+tab	hc13 hc2 if hc2>=9990 | hc2==., miss 
+	//hc13: result of the measurement 
 
 
 *** Variable: HEIGHT (CENTIMETERS)
@@ -135,7 +135,11 @@ sum height
 
 
 *** Variable: MEASURED STANDING/LYING DOWN ***	
-codebook hc15
+codebook hc15  
+/* 0 Not measured  // 0 is in DHS 6, not 5
+ 1 Lying
+ 2 Standing
+ (m) 9 Missing */
 gen measure = "l" if hc15==1 
 	//Child measured lying down
 replace measure = "h" if hc15==2 
