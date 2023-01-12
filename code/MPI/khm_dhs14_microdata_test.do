@@ -150,7 +150,7 @@ tab measure
 
 
 *** Variable: OEDEMA ***
-lookfor oedema
+lookfor oedema  // nothing returned
 gen  oedema = "n"  
 	//It assumes no-one has oedema
 tab oedema	
@@ -186,7 +186,9 @@ lab var datalib "Directory for datafiles"
 will be produced from using this ado file (datalab_z_r_rc and datalab_prev_rc)*/
 gen str30 datalab = "children_nutri_khm" 
 lab var datalab "Working file"
-	
+
+// CREATE folder manually before running the igrowup_restricted command: path_out "../../data/MPI/khm_dhs14"
+
 /*We now run the command to calculate the z-scores with the adofile */
 igrowup_restricted reflib datalib datalab gender age ageunit weight height ///
 measure oedema sw
@@ -199,11 +201,11 @@ use "$path_out/children_nutri_khm_z_rc.dta", clear
 	
 *** Standard MPI indicator ***
 	//Takes value 1 if the child is under 2 stdev below the median & 0 otherwise
-	
+sum _zwei  //  -7.29 - 27.47
 gen	underweight = (_zwei < -2.0) 
 replace underweight = . if _zwei == . | _fwei==1
 lab var underweight  "Child is undernourished (weight-for-age) 2sd - WHO"
-tab underweight [aw=hv005], miss
+tab underweight [aw=hv005], miss  // 73.66% not underweight
 
 
 gen stunting = (_zlen < -2.0)
@@ -242,8 +244,9 @@ count if _fwei==1 | _flen==1
  
 
 gen child_PR=1 
-	//Identification variable for children under 5 in PR recode 
-	
+	//Identification variable for children under 5 in PR recode
+sum child_PR  //  6,193 of them (>5234) b/c:
+tab hv120, miss  //   959 (6193-5234) not eligible for measurement
 	
 clonevar weight_ch = hv005
  
@@ -256,9 +259,9 @@ save "$path_out/KHM14_PR_child.dta", replace
 
 
 	//Erase files from folder:
-erase "$path_out/children_nutri_khm_z_rc.xls"
-erase "$path_out/children_nutri_khm_prev_rc.xls"
-erase "$path_out/children_nutri_khm_z_rc.dta"
+//erase "$path_out/children_nutri_khm_z_rc.xls"
+//erase "$path_out/children_nutri_khm_prev_rc.xls"
+//erase "$path_out/children_nutri_khm_z_rc.dta"
 
 
 ********************************************************************************
@@ -280,7 +283,7 @@ format ind_id %20.0g
 label var ind_id "Individual ID"
 
 
-desc b3 b7	
+desc b3 b7  // b3: date of birth (cmc) - none missing; b7: age at death (months, imputed) - 30,624/33,290 missing? not dead?
 gen date_death = b3 + b7
 	//Date of death = date of birth (b3) + age at death (b7)
 gen mdead_survey = v008 - date_death
@@ -294,7 +297,7 @@ label var age_death "Age at death in months"
 tab age_death, miss
 	//Check whether the age is in months	
 	
-codebook b5, tab (10)	
+codebook b5, tab (10)  // child is alive or not	
 gen child_died = 1 if b5==0
 	//Redefine the coding and labels (1=child dead; 0=child alive)
 replace child_died = 0 if b5==1
@@ -317,7 +320,7 @@ compare tot_child_died tot_child_died_2
 gen child18_died = child_died 
 replace child18_died=0 if age_death>=216 & age_death<.
 label values child18_died lab_died
-tab child18_died, miss	
+tab child18_died, miss  // 1 if died under 18; 0 otherwise
 			
 bysort ind_id: egen tot_child18_died_5y=sum(child18_died) if ydead_survey<=5
 	/*Total number of children under 18 who died in the past 5 years 
@@ -330,7 +333,7 @@ replace tot_child18_died_5y=0 if tot_child18_died_5y==. & tot_child_died>=0 & to
 replace tot_child18_died_5y=. if child18_died==1 & ydead_survey==.
 	//Replace as '.' if there is no information on when the child died  
 
-tab tot_child_died tot_child18_died_5y, miss
+tab tot_child_died tot_child18_died_5y, miss  // 0-7
 
 bysort ind_id: egen childu18_died_per_wom_5y = max(tot_child18_died_5y)
 lab var childu18_died_per_wom_5y "Total child under 18 death for each women in the last 5 years (birth recode)"
@@ -360,7 +363,12 @@ save "$path_out/KHM14_BR.dta", replace
 	
 use v001 v002 v003 v005 v012 v201 v206 v207 ///
 using "$path_in/KHIR73DT/KHIR73FL.dta", clear
-
+/*v005: sample weight
+v012: Current age - respondent
+v201: Total children ever born
+v206: Sons who have died
+v207: Daughters who have died
+*/
 	
 *** Generate individual unique key variable required for data merging
 *** v001=cluster number;  
@@ -372,7 +380,7 @@ label var ind_id "Individual ID"
 
 duplicates report ind_id
 
-tab v012, miss
+tab v012, miss  // 15-49 no missing
 codebook v201 v206 v207,tab (999)
 	/*Cambodia DHS 2014: Fertility and mortality question was only 
 	collected from women 15-49 years.*/
@@ -406,11 +414,20 @@ codebook ind_id
 *** Identify anthropometric sample for girls
 tab ha13 hv027 if hv105>=15 & hv105<=19 & hv104==2, miss
 tab ha13 hv042 if hv105>=15 & hv105<=19 & hv104==2, miss
+/*ha13: Result of measurement - height/weight
+hv027: Selection for male/husb. int.
+hv042: Household selected for hemoglobin
+hv105: age of hh member
+hv104: sex of hh member
+*/
 	/*Total number of gilrs 15-19 years who have 
 	anthropometric data and were selected for the biomarker 
 	questionnaire from households not selected for male survey: 2,156  */
 tab ha13 hv117 if hv105>=15 & hv105<=19 & hv104==2 & hv042==1, miss	
 tab ha13 hv103 if hv105>=15 & hv105<=19 & hv104==2 & hv042==1, miss
+/*hv117: Eligibility for female interview
+hv103: Slept last night
+*/
 	/*145 of the 2,156 women 15-19 years are identified as non-eligible
 	for the female interview as they did not sleep the night before in the 
 	household. Hence they will not have data on child mortality but they have 
@@ -420,6 +437,7 @@ tab ha13 hv103 if hv105>=15 & hv105<=19 & hv104==2 & hv042==1, miss
 		
 *** Keep relevant sample	
 keep if hv105>=15 & hv105<=19 & hv104==2 & hv042==1
+// age 15-19, sex female, hh selected for hemoglobin
 count
 	//Total girls 15-19 years: 2,156
 
@@ -434,7 +452,7 @@ clonevar gender = hv104
 
 *** Variable: AGE ***
 lookfor hv807c hv008 ha32
-gen age_month = hv008 - ha32
+gen age_month = hv008 - ha32  // date of interview - date of birth
 lab var age_month "Age in months, individuals 15-19 years (girls)"
 sum age_month
 count if age>228	
@@ -450,7 +468,7 @@ lab var ageunit "Months"
 
 			
 *** Variable: BODY WEIGHT (KILOGRAMS) ***
-codebook ha2, tab (9999)
+codebook ha2, tab (9999)  // ha2: weight {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
 count if ha2>9990 
 tab ha13 if ha2>9990, miss
 gen weight = ha2/10 if ha2<9990
@@ -460,7 +478,7 @@ sum weight
 
 
 *** Variable: HEIGHT (CENTIMETERS)	
-codebook ha3, tab (9999)
+codebook ha3, tab (9999)  // ha3: height, similar comment to a few lines above about ha2: weight
 count if ha3>9990 
 tab ha13 if ha3>9990, miss
 gen height = ha3/10 if ha3<9990
@@ -558,9 +576,9 @@ save "$path_out/KHM14_PR_girls.dta", replace
 
 
 	//Erase files from folder:
-erase "$path_out/girl_nutri_khm_z.xls"
-erase "$path_out/girl_nutri_khm_prev.xls"
-erase "$path_out/girl_nutri_khm_z.dta"
+//erase "$path_out/girl_nutri_khm_z.xls"
+//erase "$path_out/girl_nutri_khm_prev.xls"
+//erase "$path_out/girl_nutri_khm_z.dta"
 
 
 ********************************************************************************
@@ -575,14 +593,14 @@ use "$path_in/KHMR72DT/KHMR72FL.dta", clear
 	*** mv001=cluster number; 
 	*** mv002=household number;
 	*** mv003=respondent's line number
-gen double ind_id = mv001*1000000 + mv002*100 + mv003 	
+gen double ind_id = mv001*1000000 + mv002*100 + mv003  // not in DHS 5? not in recode manual, but found in "$path_in/KHMR51DT/KHMR51FL.dta"
 format ind_id %20.0g
 label var ind_id "Individual ID"
 
 duplicates report ind_id
 
-tab mv012, miss
-codebook mv201 mv206 mv207,tab (999)
+tab mv012, miss  // age 15-49
+codebook mv201 mv206 mv207,tab (999)  // Total children ever born, Sons who have died, Daughters who have died
 	/*Cambodia DHS 2014: Fertility and mortality question was only 
 	collected from men 15-49 years.*/
 	
