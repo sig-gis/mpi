@@ -196,7 +196,7 @@ measure oedema sw
 /*We now turn to using the dta file that was created and that contains 
 the calculated z-scores to create the child nutrition variables following WHO 
 standards */
-use "$path_out/children_nutri_khm_z_rc.dta", clear  // 959/6,193 ind_id missing?
+use "$path_out/children_nutri_khm_z_rc.dta", clear
 
 	
 *** Standard MPI indicator ***
