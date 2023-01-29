@@ -731,22 +731,25 @@ lab var low_bmiage_b_u "Teenage very low bmi 3sd - WHO (boys)"
 *** Merging child under 5 
 *****************************************
 merge 1:1 ind_id using "$path_out/KHM14_PR_child.dta"
-tab hv120, miss  
-tab hc13 if hv120==1, miss
+tab hv120, miss  // # of matched obs. same as # of children eligible for height/weight and hemoglobin
+tab hc13 if hv120==1, miss  // among the eligible children, 96.52% measured
 drop _merge
 // erase "$path_out/KHM14_PR_child.dta"
 
 
 sort ind_id
 
+save "$path_out/KHM14_merged.dta", replace
 
 ********************************************************************************
 *** Step 1.9 KEEPING ONLY DE JURE HOUSEHOLD MEMBERS ***
 ********************************************************************************
 
+use "$path_out/KHM14_merged.dta", clear
+
 //Permanent (de jure) household members 
-clonevar resident = hv102 
-codebook resident, tab (10) 
+clonevar resident = hv102  // usual resident
+codebook resident, tab (10)  // 804 no, all others yes
 label var resident "Permanent (de jure) household member"
 
 drop if resident!=1 
@@ -768,9 +771,9 @@ age 5 in a subsample of two-thirds of the households were measured for height
 and weight. The height and weight of women age 15-49 were also measured among 
 the two-thirds subsample of households (p.7-8) */
 
-clonevar subsample = hv042
+clonevar subsample = hv042  // hv042: Household selected for hemoglobin
 label var subsample "Households selected as part of nutrition subsample" 
-drop if subsample!=1 
+drop if subsample!=1  // drop 1/3 not selected (1/2 for 2005?)
 tab subsample, miss	
 	
 	
@@ -789,23 +792,24 @@ relevant indicators.*/
 *** for adult nutrition indicator
 ***********************************************
 tab ha13 if hv105>=15 & hv105<=19 & hv104==2, miss
+// ha13: Result of measurement - height/weight
 gen fem_nutri_eligible = (ha13!=.)
-tab fem_nutri_eligible, miss
+tab fem_nutri_eligible, miss  // about 3/4 ppl. not eligible
 bysort hh_id: egen hh_n_fem_nutri_eligible = sum(fem_nutri_eligible) 	
 gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss
+tab no_fem_nutri_eligible, miss  // about 10% hh has no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
 *** for child mortality indicator
 *****************************************
-gen	fem_eligible = (hv117==1)
+gen	fem_eligible = (hv117==1)  // hv117: Eligibility for female interview
 bysort	hh_id: egen hh_n_fem_eligible = sum(fem_eligible) 	
 	//Number of eligible women for interview in the hh
-gen	no_fem_eligible = (hh_n_fem_eligible==0) 									
+gen	no_fem_eligible = (hh_n_fem_eligible==0)		
 	//Takes value 1 if the household had no eligible women for an interview
 lab var no_fem_eligible "Household has no eligible women for interview"
 drop fem_eligible hh_n_fem_eligible 
@@ -843,14 +847,14 @@ lab var no_male_eligible "Household has no eligible man for interview"
 *** No eligible children under 5
 *** for child nutrition indicator
 *****************************************
-gen	child_eligible = (hv120==1) 
+gen	child_eligible = (hv120==1)  // Children eligibility for height/weight and hemo
 bysort	hh_id: egen hh_n_children_eligible = sum(child_eligible)  
 	//Number of eligible children for anthropometrics
 gen	no_child_eligible = (hh_n_children_eligible==0) 
 	//Takes value 1 if there were no eligible children for anthropometrics
 lab var no_child_eligible "Household has no children eligible for anthropometric"
 drop hh_n_children_eligible
-tab no_child_eligible, miss
+tab no_child_eligible, miss  // 1:0 about half:half
 
 
 *** No eligible women and men 
