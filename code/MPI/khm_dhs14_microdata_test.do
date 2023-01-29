@@ -734,7 +734,7 @@ merge 1:1 ind_id using "$path_out/KHM14_PR_child.dta"
 tab hv120, miss  
 tab hc13 if hv120==1, miss
 drop _merge
-erase "$path_out/KHM14_PR_child.dta"
+// erase "$path_out/KHM14_PR_child.dta"
 
 
 sort ind_id
