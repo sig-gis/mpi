@@ -196,7 +196,7 @@ measure oedema sw
 /*We now turn to using the dta file that was created and that contains 
 the calculated z-scores to create the child nutrition variables following WHO 
 standards */
-use "$path_out/children_nutri_khm_z_rc.dta", clear 
+use "$path_out/children_nutri_khm_z_rc.dta", clear  // 959/6,193 ind_id missing?
 
 	
 *** Standard MPI indicator ***
@@ -660,33 +660,36 @@ sort hh_id ind_id
  
 *** Merging BR Recode 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM14_BR.dta"
+merge 1:1 ind_id using "$path_out/KHM14_BR.dta"  // nrow*ncol: 11723*3
+// rows: one obs. per woman; cols: 2 variables + ind_id
+// merge: 2 variables added as 2 columns at the end of KHPR73FL.dta; values populated in rows where ind_id (in KHPR73FL.dta & KHM14_BR.dta) match; values denoted as missing in rows where ind_id in KHPR73FL.dta but not in KHM14_BR.dta
 drop _merge
-erase "$path_out/KHM14_BR.dta"
+// erase "$path_out/KHM14_BR.dta"
 
 
 *** Merging IR Recode 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM14_IR.dta"
-tab women_IR hv117, miss col
+merge 1:1 ind_id using "$path_out/KHM14_IR.dta"  // 17,578 rows
+tab women_IR hv117, miss col  // women_IR vs eligibility for female interview: women_IR is 1 for all obs. in KHM14_IR.dta, which should be the obs. eligible for female interview
 tab ha65 if hv117==1 & women_IR ==., miss 
 	//Total number of eligible women not interviewed
 drop _merge
-erase "$path_out/KHM14_IR.dta"
+// erase "$path_out/KHM14_IR.dta"
 
 
 /*Check if the number of women in BR recode matches the number of those
 who provided birth history information in IR recode. */
-count if women_BR==1
-count if v201!=0 & v201!=. & women_IR==1
+count if women_BR==1  // 11,723
+count if v201!=0 & v201!=. & women_IR==1  // 11,723
+// v201: Total children ever born
 
 
 /*Check if the number of women in BR and IR recode who provided birth history 
 information matches with the number of eligible women identified by hv117. */
-count if hv117==1
-count if women_BR==1 | v201==0
-count if (women_BR==1 | v201==0) & hv117==1
-tab v201 if hv117==1, miss
+count if hv117==1  // hv117: Eligibility for female interview, 18,012
+count if women_BR==1 | v201==0  // 17,578 women in BR or has 0 child
+count if (women_BR==1 | v201==0) & hv117==1  // 17,578
+tab v201 if hv117==1, miss  // 434 eligible, but missing birth history (total children ever born)
 tab v201 ha65 if hv117==1, miss
 	/*Note: Some 2.4% eligible women did not provide information on their birth 
 	history. This will result in missing value for the child mortality 
@@ -696,19 +699,19 @@ tab v201 ha65 if hv117==1, miss
 *** Merging 15-19 years: girls 
 *****************************************
 merge 1:1 ind_id using "$path_out/KHM14_PR_girls.dta"
-tab girl_PR hv042 if hv105>=15 & hv105<=19 & hv104==2, miss col
+tab girl_PR hv042 if hv105>=15 & hv105<=19 & hv104==2, miss col  // girl_PR=1 corresponds to household selected for hemoglobin
 drop _merge
-erase "$path_out/KHM14_PR_girls.dta"	
+// erase "$path_out/KHM14_PR_girls.dta"	
 	
 	
 *** Merging MR Recode 
 *****************************************
 merge 1:1 ind_id using "$path_out/KHM14_MR.dta"
-tab men_MR hv118 if hv027==1, miss col
+tab men_MR hv118 if hv027==1, miss col  // men_MR=1 corresponds to eligibility for male interview; 294 eligible male have men_MR missing
 *tab hb65 if hv118==1 & men_MR ==. 
 	//Total of eligible men not interviewed
 drop _merge
-erase "$path_out/KHM14_MR.dta"	
+// erase "$path_out/KHM14_MR.dta"	
 
 
 *** Merging 15-19 years: boys 
