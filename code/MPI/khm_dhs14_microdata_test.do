@@ -1017,7 +1017,7 @@ label define lab_reg ///
 19 "Mondul Kiri and Ratanak Kiri"
 label values region lab_reg
  
-save "$path_out/KHM14_merged_procd.dta", replace 
+save "$path_out/KHM14_merged_procd.dta", replace  // proccessed
 
 ********************************************************************************
 ***  Step 2 Data preparation  ***
@@ -1025,12 +1025,13 @@ save "$path_out/KHM14_merged_procd.dta", replace
 ***  Identification of non-deprived & deprived individuals  
 ********************************************************************************
 
+use "$path_out/KHM14_merged_procd.dta", clear 
 
 ********************************************************************************
 *** Step 2.1 Years of Schooling ***
 ********************************************************************************
 
-codebook hv108, tab(30)
+codebook hv108, tab(30)  // 1-25 in DHS 6, but 1-20 in DHS 5
 clonevar  eduyears = hv108   
 	//Total number of years of education
 replace eduyears = . if eduyears>30
@@ -1070,7 +1071,7 @@ gen	 years_edu6 = (eduyears>=6)
 	/* The years of schooling indicator takes a value of "1" if at least someone 
 	in the hh has reported 6 years of education or more */
 replace years_edu6 = . if eduyears==.
-bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)
+bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone..
 gen	hh_years_edu6 = (hh_years_edu6_1==1)
 replace hh_years_edu6 = . if hh_years_edu6_1==.
 replace hh_years_edu6 = . if hh_years_edu6==0 & no_missing_edu==0 
@@ -1093,9 +1094,9 @@ lab var hh_years_edu_u "Household has at least one member with 1 year of edu"
 *** Step 2.2 Child School Attendance ***
 ********************************************************************************
 
-codebook hv121, tab (10)
+codebook hv121, tab (10)  // Member attended school during current school year
 clonevar attendance = hv121 
-recode attendance (2=1) 
+recode attendance (2=1)  // count "attended at some time" as attendance (1)
 codebook attendance, tab (10)
 
 		
@@ -1116,7 +1117,7 @@ gen	child_schoolage = (age>=6 & age<=14)
 	/*A control variable is created on whether there is no information on 
 	school attendance for at least 2/3 of the school age children */
 count if child_schoolage==1 & attendance==.
-	//Understand how many eligible school aged children are not attending school 
+	//Understand how many eligible school aged children don't have attendence info
 gen temp = 1 if child_schoolage==1 & attendance!=.
 	/*Generate a variable that captures the number of eligible school aged 
 	children who are attending school */
@@ -1222,9 +1223,10 @@ tab hh_child_atten_u, miss
 ********************************************************************************
 	//Cambodia DHS 2014 has no anthropometric data for adult men 
 
+// ha40 BMI, range is 1200:6000 in DHS 6, but no range specified in DHS 5
 foreach var in ha40 {
 			 gen inf_`var' = 1 if `var'!=.
-			 bysort sex: tab age inf_`var' 
+			 bysort sex: tab age inf_`var'  // # of BMI obs. by sex & age
 			 //BMI data covers women 15-49 years. 
 			 drop inf_`var'
 			 }
@@ -1264,7 +1266,8 @@ lab var m_low_bmi_u "BMI of male <17"
 gen low_bmi_byage = 0
 lab var low_bmi_byage "Individuals with low BMI or BMI-for-age"
 replace low_bmi_byage = 1 if f_low_bmi==1
-	//Replace variable "low_bmi_byage = 1" if eligible women have low BMI	
+	//Replace variable "low_bmi_byage = 1" if eligible women have low BMI
+	//to be replaced by BMI-for-age for teenagers
 replace low_bmi_byage = 1 if low_bmi_byage==0 & m_low_bmi==1 
 	/*Replace variable "low_bmi_byage = 1" if eligible men have low BMI. If 
 	there is no male anthropometric data, then 0 changes are made.*/
@@ -1273,7 +1276,8 @@ replace low_bmi_byage = 1 if low_bmi_byage==0 & m_low_bmi==1
 /*Note: The following command replaces BMI with BMI-for-age for those between 
 the age group of 15-19 by their age in months where information is available */
 	//Replacement for girls: 
-replace low_bmi_byage = 1 if low_bmiage==1 & age_month!=.
+replace low_bmi_byage = 1 if low_bmiage==1 & age_month!=.  
+// low_bmiage ("Teenage low bmi 2sd - WHO") calculated by who2007 in Step 1.4
 replace low_bmi_byage = 0 if low_bmiage==0 & age_month!=.
 	/*Replacements for boys - if there is no male anthropometric data for boys, 
 	then 0 changes are made: */
@@ -1357,7 +1361,7 @@ tab hh_no_low_bmiage_u, miss
 ************************************************************************
 
 *** Standard MPI ***
-bysort hh_id: egen temp = max(underweight)
+bysort hh_id: egen temp = max(underweight)  // "Child is undernourished (weight-for-age) 2sd - WHO"
 gen	hh_no_underweight = (temp==0) 
 	//Takes value 1 if no child in the hh is underweight 
 replace hh_no_underweight = . if temp==.
@@ -1380,7 +1384,7 @@ drop temp
 ************************************************************************
 
 *** Standard MPI ***
-bysort hh_id: egen temp = max(stunting)
+bysort hh_id: egen temp = max(stunting)  // "Child is stunted (length/height-for-age) 2sd - WHO"
 gen	hh_no_stunting = (temp==0) 
 	//Takes value 1 if no child in the hh is stunted
 replace hh_no_stunting = . if temp==.
@@ -1403,7 +1407,7 @@ drop temp
 ************************************************************************
 
 *** Standard MPI ***
-bysort hh_id: egen temp = max(wasting)
+bysort hh_id: egen temp = max(wasting)  // "Child is wasted (weight-for-length/height) 2sd - WHO"
 gen	hh_no_wasting = (temp==0) 
 	//Takes value 1 if no child in the hh is wasted
 replace hh_no_wasting = . if temp==.
@@ -1509,14 +1513,14 @@ tab hh_nutrition_uw_st_u, miss
 *** Step 2.4 Child Mortality ***
 ********************************************************************************
 
-codebook v206 v207 mv206 mv207
+codebook v206 v207 mv206 mv207  // mv206 mv207 are empty
 	//v206 or mv206: number of sons who have died 
 	//v207 or mv207: number of daughters who have died
 	
 
 	//Total child mortality reported by eligible women
 egen temp_f = rowtotal(v206 v207), missing
-replace temp_f = 0 if v201==0
+replace temp_f = 0 if v201==0  // v201: Total children ever born
 bysort	hh_id: egen child_mortality_f = sum(temp_f), missing
 lab var child_mortality_f "Occurrence of child mortality reported by women"
 tab child_mortality_f, miss
@@ -1565,7 +1569,9 @@ replace childu18_died_per_wom_5y = 0 if v201==0
 *replace childu18_died_per_wom_5y = 0 if hv115==0 & hv104==2 & hv105>=15 & hv105<=49
 	/*This line replaces never-married women with 0 child death. If in your 
 	country dataset, child mortality information was only collected from 
-	ever-married women (check report), please activate this command line.*/		
+	ever-married women (check report), please activate this command line.*/	
+	// (p.127) Each woman age 15-49 was asked whether she had ever given birth, and, if she had, she was asked to report the number of sons and daughters who live with her, the number who live elsewhere, and the number who have died.
+	// same in 2005 report (p.121)
 replace childu18_died_per_wom_5y = 0 if no_fem_eligible==1 
 	/*Assign a value of "0" for:
 	- individuals living in households that have non-eligible women */	
