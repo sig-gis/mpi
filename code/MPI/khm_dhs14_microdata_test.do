@@ -901,7 +901,7 @@ label var weight "Sample weight"
 
 
 //Area: urban or rural	
-desc hv025
+desc hv025  // 1 urban, 2 rural
 codebook hv025, tab (5)		
 clonevar area = hv025  
 replace area=0 if area==2  
@@ -911,9 +911,12 @@ label var area "Area: urban-rural"
 
 
 //Relationship to the head of household 
-clonevar relationship = hv101 
+clonevar relationship = hv101  // 1-14, 98: DK, 99: Missing 
 codebook relationship, tab (20)
 recode relationship (1=1)(2=2)(3=3)(11=3)(4/10=4)(12=5)
+// treat adopted/foster child as son/daughter
+// combine son/daughter-in-law, grandchild, parent, parent-in-law,
+// brother/sister, other relative into a single category "extended family"
 label define lab_rel 1"head" 2"spouse" 3"child" 4"extended family" ///
 					 5"not related" 6"maid"
 label values relationship lab_rel
@@ -927,7 +930,7 @@ clonevar sex = hv104
 label var sex "Sex of household member"
 
 
-//Household headship
+//Household headship  // not used for MPI?
 bys	hh_id: egen missing_hhead = min(relationship)
 tab missing_hhead,m 
 gen household_head=.
@@ -945,7 +948,7 @@ tab headship, miss
 //Age of household member
 codebook hv105, tab (999)
 clonevar age = hv105  
-replace age = . if age>=98
+replace age = . if age>=98  // 98: DK, 99: Missing
 label var age "Age of household member"
 
 
@@ -962,7 +965,7 @@ recode age (0/17 = 1 "0-17") (18/max = 2 "18+"), gen(agec2)
 lab var agec2 "age groups (2 groups)"
 
 
-//Marital status of household member
+//Marital status of household member  // not used elsewhere
 clonevar marital = hv115 
 codebook marital, tab (10)
 recode marital (0=1)(1=2)(8=.)
@@ -1014,6 +1017,7 @@ label define lab_reg ///
 19 "Mondul Kiri and Ratanak Kiri"
 label values region lab_reg
  
+save "$path_out/KHM14_merged_procd.dta", replace 
 
 ********************************************************************************
 ***  Step 2 Data preparation  ***
