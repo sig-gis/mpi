@@ -1605,7 +1605,7 @@ lab var hh_mortality_u "Household had no under 18 child mortality in the last 5 
 /*Members of the household are considered 
 deprived if the household has no electricity */
 ***************************************************
-clonevar electricity = hv206 
+clonevar electricity = hv206  // has na in DHS 5, but not DHS 6
 codebook electricity, tab (10)
 label var electricity "Household has electricity"
 
@@ -1632,8 +1632,28 @@ Note: In cases of mismatch between the country report and the internationally
 agreed guideline, we followed the report.
 */
 
-clonevar toilet = hv205  
-codebook hv225, tab(30)  
+clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 5; na in DHS 5, but not DHS 6)
+/*(10 FLUSH TOILET: not found in data, FLUSH TOILET categorized into 11-15
+ 11 Flush to piped sewer system IMPROVED
+ 12 Flush to septic tank IMPROVED
+ 13 Flush to pit latrine IMPROVED
+ 14 Flush to somewhere else
+ 15 Flush, don't know where
+ 20 PIT TOILET LATRINE: not found in data, PIT TOILET LATRINE categorized into 21-23
+ 21 Ventilated Improved Pit latrine (VIP) IMPROVED
+ 22 Pit latrine with slab IMPROVED
+ 23 Pit latrine without slab/open pit
+ 30 NO FACILITY
+ 31 No facility/bush/field
+ 41 Composting toilet IMPROVED
+ 42 Bucket toilet
+ 43 Hanging toilet/latrine
+ 96 Other
+ (m) 99 Missing */
+// In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: bucket over water, 61: no toilet/field/forest, 96: other. Same as 2014 questionnaire, except in 2014 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
+// 2005 report does tabulate categories as defined by unstats.un.org
+codebook hv225, tab(30)  // Share toilet with other households
+// has na in DHS 5, but not DHS 6
 clonevar shared_toilet = hv225 
 	//0=no;1=yes;.=missing
 
@@ -1713,8 +1733,21 @@ agreed guideline, we followed the report.
 	information. Household is identified as deprived if they had used 
 	non-improved source of drinking water in either dry or wet season, as well 
 	as walked more than 30 minutes in either season */
+	// sh10xx variables not defined in recode manual
 	
-clonevar water = hv201 
+/* 2005 vs 2014: 
+According to the tables in the reports, both have improved water source
+categories defined by unstats.un.org, assuming bottled water == packaged
+water. The 2005 report further decomposes bottled water into improved vs 
+unimproved ("Because the quality of drinking water is not known, households 
+using bottled water for drinking are classified as using an improved or 
+non-improved source according to their water source for cooking and washing."). 
+The 2005 report also has one more category under "time to obtain drinking 
+water" - water delivered, in addition to water on premises, < 30 mins, >= 30 
+mins, and DK.
+*/
+
+clonevar water = hv201  // same in DHS 5 & 6 except only DHS 5 has na
 clonevar water_dry = sh102
 clonevar water_wet = sh104b
 
@@ -1722,9 +1755,12 @@ clonevar timetowater = hv204
 clonevar timetowater_dry = sh104  
 clonevar timetowater_wet = sh104d
 
-codebook water_dry, tab(30)
-codebook water_wet, tab(30)
-	
+codebook water_dry, tab(30)  // labels same as hv201
+codebook water_wet, tab(30)  // labels same as hv201
+
+tab timetowater_dry, miss nolabel
+tab timetowater_wet, miss nolabel
+
 /*Some DHS might have the variable non-drinking water. Please try looking for it 
 as it will affect the poverty indicator. */
 clonevar ndwater = hv202  
@@ -1746,7 +1782,11 @@ gen	water_mdg = 1 if water_dry==11 | water_dry==12 | water_dry==13 | ///
 	/*Non deprived if water is piped into dwelling, piped to yard/plot, 
 	  public tap/standpipe, tube well or borehole, protected well, 
 	  protected spring, rainwater, bottled water */
-	
+/* unstats.un.org: piped water into 
+dwelling, yard or plot; public taps or standpipes; boreholes or tubewells; 
+protected dug wells; protected springs; packaged water; delivered water and 
+rainwater */
+
 replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
 						 water_dry==61 | water_dry==62 | water_dry==96 | ///
 						 water_wet==32 | water_wet==42 | water_wet==43 | ///
@@ -1756,8 +1796,8 @@ replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
 		
 replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 						  & timetowater_dry!=. ///
-						  & timetowater_dry!=996 ///
-						  & timetowater_dry!=998) ///
+						  & timetowater_dry!=996 /// on premises
+						  & timetowater_dry!=998) /// DK
 						  | (water_mdg==1 & timetowater_wet >= 30 ///
 						  & timetowater_wet!=. ///
 						  & timetowater_wet!=996 ///
@@ -1767,7 +1807,6 @@ replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 replace water_mdg = . if water_dry==. & water_wet==. 
 
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss
 tab water_mdg, miss
 
 
@@ -1808,8 +1847,9 @@ tab water_u, miss
 
 /* Members of the household are considered deprived if the household 
 has a dirt, sand or dung floor */
-clonevar floor = hv213 
-codebook floor, tab(99)
+clonevar floor = hv213  // na in DHS 5, but not DHS 6
+// 2005 questionnaire same as that of 2014 except in 2014, natural floor contains 2 categories (EARTH/SAND/CLAY & DUNG), where as in 2005, natural floor contains 1 category EARTH/CLAY
+codebook floor, tab(99)  // numeric codes correspond to those in questionnaire
 gen	floor_imp = 1
 replace floor_imp = 0 if floor<=12 | floor==96  
 	//Deprived if mud/earth, sand, dung, other 	
@@ -1820,8 +1860,9 @@ tab floor floor_imp, miss
 
 /* Members of the household are considered deprived if the household has walls 
 made of natural or rudimentary materials */
-clonevar wall = hv214 
-codebook wall, tab(99)	
+clonevar wall = hv214  // na in DHS 5, but not DHS 6
+// In the questionnaires, main material the walls is asked in 2005, whereas main material of the EXTERIOR walls is asked in 2014. The categories are otherwise more or less the same except in 2014, finished walls include covered adobe as an additional category (35 is wood plank in 2005, but in 2014 35 is covered adobe and 36 is wood plank).
+codebook wall, tab(99)  // numeric codes correspond to those in questionnaire
 gen	wall_imp = 1 
 replace wall_imp = 0 if wall<=28 | wall==96  
 	/*Deprived if no wall, cane/palms/trunk, mud/dirt, 
@@ -1835,10 +1876,11 @@ tab wall wall_imp, miss
 	
 /* Members of the household are considered deprived if the household has roof 
 made of natural or rudimentary materials */
-clonevar roof = hv215
+clonevar roof = hv215  // na in DHS 5, but not DHS 6
+// 2005 questionnaire more or less the same as that of 2014 except in 2014, rudimentary roofing contains 2 more categories & finished roofing contains 1 more category
 codebook roof, tab(99)		
 gen	roof_imp = 1 
-replace roof_imp = 0 if roof<=24 | roof==96  
+replace roof_imp = 0 if roof<=24 | roof==96  // numeric codes correspond to those in questionnaire
 	/*Deprived if no roof, thatch/palm leaf, mud/earth/lump of earth, 
 	sod/grass, plastic/polythene sheeting, rustic mat, cardboard, 
 	canvas/tent, wood planks/reused wood, unburnt bricks, other */	
@@ -1885,12 +1927,14 @@ https://apps.who.int/iris/bitstream/handle/10665/141496/9789241548885_eng.pdf
 */
 
 clonevar cookingfuel = hv226  
+// 2005 & 2014 questionnaires are similar except in 2014, NO FOOD COOKED IN HH is an option and is given a code of 95.
 
 *** Standard MPI ***
 /* Members of the household are considered deprived if the 
 household uses solid fuels and solid biomass fuels for cooking. */
 *****************************************************************
-codebook cookingfuel, tab(99)
+codebook cookingfuel, tab(99)  // numeric codes don't correspond to those in
+// the questionnaire, check their labels
 gen	cooking_mdg = 1
 replace cooking_mdg = 0 if cookingfuel>5 & cookingfuel<95 
 replace cooking_mdg = . if cookingfuel==. | cookingfuel==99
@@ -1919,22 +1963,27 @@ lab var cooking_u "Household uses clean fuels for cooking"
 /* Members of the household are considered deprived if the household does not 
 own more than one of: radio, TV, telephone, bike, motorbike or refrigerator and 
 does not own a car or truck. */
+/* The list for 2014 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, refrigerator, computer or animal cart*/
+/* In 2005, telephone tabulated in report includes only mobile telephone, animal cart not tabulated in report. Non-mobile telephone is not asked about in questionnaire, but a question is asked about the ownership of an oxcart or horsecart. */
+/* Comparing the 2005 & 2014 questionnaires, motorbike question includes moped in 2005 but not in 2014. Motorcycle-cart is asked about in 2014, but not 2005. A question about ownership of an oxcart or horsecart is also asked in 2014. Car/truck question includes tractor in 2014, but not 2005. */
 
 	//Check that for standard assets in living standards: "no"==0 and yes=="1"
-codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv244
+codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c  // hv244
+// na in DHS 5, but not DHS 6
 
 clonevar television = hv208 
-gen bw_television   = .
+gen bw_television = .
 clonevar radio = hv207 
-clonevar telephone =  hv221 
+clonevar telephone = hv221  // 3,877/47,917 has (land-line) telephone, 4 missing
 clonevar mobiletelephone = hv243a  	
 clonevar refrigerator = hv209 
-clonevar car = hv212  	
+clonevar car = hv212  // car/truck  	
 clonevar bicycle = hv210 
 clonevar motorbike = hv211 
 gen computer=.
 clonevar animal_cart = hv243c
-	
+
+// count if hv221==1 & mobiletelephone!=1	// 256
 
 foreach var in television radio telephone mobiletelephone refrigerator ///
 			   car bicycle motorbike computer animal_cart {
@@ -1946,7 +1995,8 @@ replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98
 	//Combine information on telephone and mobiletelephone
 replace telephone=1 if telephone==0 & mobiletelephone==1
 replace telephone=1 if telephone==. & mobiletelephone==1
-
+// telephone=1 if has either telephone/mobiletelephone
+// 43,385 1's, 4 missing
 
 	//Label indicators
 lab var television "Household has television"
@@ -1962,7 +2012,7 @@ lab var animal_cart "Household has animal cart"
 
 *** Standard MPI ***
 /* Members of the household are considered deprived in assets if the household 
-does not own more than one of: radio, TV, telephone, bike, motorbike, 
+does not own more than one of: radio, TV, telephone, refrigerator, bike, motorbike, 
 refrigerator, computer or animal cart and does not own a car or truck.*/
 *****************************************************************************
 
@@ -1993,7 +2043,7 @@ desc hv270
 clonevar windex=hv270
 
 desc hv271
-clonevar windexf=hv271
+clonevar windexf=hv271  // Wealth index factor score (5 decimals) 
 
 
 	//Retain data on sampling design: 
@@ -2010,6 +2060,7 @@ clonevar year_interview = hv007
 clonevar month_interview = hv006 
 clonevar date_interview = hv008
  
+save "$path_out/khm_dhs14_raw.dta", replace 
 
 *** Rename key global MPI indicators for estimation ***
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)
