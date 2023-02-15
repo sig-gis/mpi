@@ -7,8 +7,10 @@
 !data
 data/*
 !data/MPI
+!data/boundaries
+data/boundaries/KHM_SALB_1998
+!data/boundaries/Map_percentage_of_houses_with_electricity.gpkg
 
 !output*
-
 
 !.gitignore
