@@ -10,6 +10,10 @@ data/*
 !data/boundaries
 data/boundaries/KHM_SALB_1998
 !data/boundaries/Map_percentage_of_houses_with_electricity.gpkg
+!data/CF
+!data/CF/Cambodia
+data/CF/Cambodia/*
+!data/CF/Cambodia/Name of CB*
 
 !output*
 
