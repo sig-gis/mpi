@@ -794,8 +794,7 @@ lab var no_male_nutri_eligible "Household has no eligible men for anthropometric
 *** No eligible men 15-49 years
 *** for child mortality indicator (if relevant)
 *****************************************
-// no_male_eligible all set to missing in 2014
-// "male_eligible" is only found in the following lines, so the inconsistency is ok(?)
+// no_male_eligible all set to missing in 2014, but "male_eligible" is only found in the following lines, so the inconsistency is ok(?)
 gen	male_eligible = (hv118==1)
 // hv118: eligibility for male interview
 bysort	hh_id: egen hh_n_male_eligible = sum(male_eligible)  
@@ -817,7 +816,7 @@ gen	no_child_eligible = (hh_n_children_eligible==0)
 	//Takes value 1 if there were no eligible children for anthropometrics
 lab var no_child_eligible "Household has no children eligible for anthropometric"
 drop hh_n_children_eligible
-tab no_child_eligible, miss
+tab no_child_eligible, miss  // 1:0 about half:half
 
 
 *** No eligible women and men 
@@ -924,6 +923,7 @@ lab var agec2 "age groups (2 groups)"
 
 
 //Marital status of household member
+// different from 2014 script, but ok because not used elsewhere
 clonevar marital = hv115 
 codebook marital, tab (10)
 recode marital (0=1)(1=2)(3=3)(4=4)(9=.)
@@ -972,6 +972,7 @@ label define lab_reg ///
 label values region lab_reg
 codebook region, tab (99)
 
+save "$path_out/KHM10_merged_procd.dta", replace  // proccessed
 
 ********************************************************************************
 ***  Step 2 Data preparation  ***

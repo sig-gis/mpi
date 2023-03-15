@@ -820,7 +820,6 @@ tab no_fem_eligible, miss
 *** for adult nutrition indicator (if relevant)
 ***********************************************
 	//Note: There is no male anthropometric data for Cambodia DHS 2014
-// all hv118 = not eligible
 gen	male_nutri_eligible = .	
 gen	no_male_nutri_eligible = .
 lab var no_male_nutri_eligible "Household has no eligible men for anthropometric"	
@@ -841,6 +840,9 @@ lab var no_male_nutri_eligible "Household has no eligible men for anthropometric
 	children and women, does not have information on child mortality from men. 
 	Hence, we identify this survey as not having child mortality information 
 	from men even though the data was collected */
+
+// all hv118 = not eligible
+// no_male_eligible is computed in 2010 script, but "male_eligible" is only found in the following 2 lines, so the inconsistency is ok(?)
 gen	no_male_eligible = .
 lab var no_male_eligible "Household has no eligible man for interview"
 
@@ -927,7 +929,8 @@ tab hv101 relationship, miss
 
 //Sex of household member	
 codebook hv104
-clonevar sex = hv104 
+clonevar sex = hv104
+// doesn't recode sex (9=.) as in 2010 script, but ok because there's no missing value here
 label var sex "Sex of household member"
 
 
