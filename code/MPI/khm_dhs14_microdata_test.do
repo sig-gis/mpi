@@ -136,7 +136,7 @@ sum height
 
 *** Variable: MEASURED STANDING/LYING DOWN ***	
 codebook hc15  
-/* 0 Not measured  // 0 is in DHS 6, not 5
+/* 0 Not measured  // 0 is in DHS 6, not 5 - according to recode manual, but 0 found in 2010
  1 Lying
  2 Standing
  (m) 9 Missing */
@@ -248,11 +248,11 @@ gen child_PR=1
 sum child_PR  //  6,193 of them (>5234) b/c:
 tab hv120, miss  //   959 (6193-5234) not eligible for measurement
 	
-clonevar weight_ch = hv005
+clonevar weight_ch = hv005  // divided by 1e6 in 2010 script, but weight_ch not used for calculation, so the inconsistency is ok
  
  
 	//Retain relevant variables:
-keep  ind_id child_PR weight_ch underweight* stunting* wasting* 
+keep  ind_id child_PR weight_ch underweight* stunting* wasting*  // child_PR not retained in 2010 script
 order ind_id child_PR weight_ch underweight* stunting* wasting* 
 sort  ind_id
 save "$path_out/KHM14_PR_child.dta", replace
@@ -820,6 +820,7 @@ tab no_fem_eligible, miss
 *** for adult nutrition indicator (if relevant)
 ***********************************************
 	//Note: There is no male anthropometric data for Cambodia DHS 2014
+// all hv118 = not eligible
 gen	male_nutri_eligible = .	
 gen	no_male_nutri_eligible = .
 lab var no_male_nutri_eligible "Household has no eligible men for anthropometric"	
