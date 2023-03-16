@@ -1101,6 +1101,7 @@ lab var hh_years_edu_u "Household has at least one member with 1 year of edu"
 codebook hv121, tab (10)  // Member attended school during current school year
 clonevar attendance = hv121 
 recode attendance (2=1)  // count "attended at some time" as attendance (1)
+// doesn't recode (9=.) as in 2010 script, but ok because there's no missing value here
 codebook attendance, tab (10)
 
 		
@@ -1611,6 +1612,7 @@ deprived if the household has no electricity */
 ***************************************************
 clonevar electricity = hv206  // has na in DHS 5, but not DHS 6
 codebook electricity, tab (10)
+// doesn't replace 9 with . as in 2010 script, but ok because all values missing here have already been encoded as .
 label var electricity "Household has electricity"
 
 
@@ -1637,6 +1639,7 @@ agreed guideline, we followed the report.
 */
 
 clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 5; na in DHS 5, but not DHS 6)
+codebook toilet, tab(100) 
 /*(10 FLUSH TOILET: not found in data, FLUSH TOILET categorized into 11-15
  11 Flush to piped sewer system IMPROVED
  12 Flush to septic tank IMPROVED
@@ -1654,7 +1657,7 @@ clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 
  43 Hanging toilet/latrine
  96 Other
  (m) 99 Missing */
-// In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: bucket over water, 61: no toilet/field/forest, 96: other. Same as 2014 questionnaire, except in 2014 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
+// In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: toilet over water, 61: no toilet/field/forest, 96: other. Same as 2014 & 2010 questionnaire, except in 2014 & 2010 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
 // 2005 report does tabulate categories as defined by unstats.un.org
 codebook hv225, tab(30)  // Share toilet with other households
 // has na in DHS 5, but not DHS 6
@@ -1684,7 +1687,7 @@ replace toilet_mdg = 0 if toilet == 14 | toilet == 15
 	/*Household is assigned a value of '0' if it uses non-improved sanitation: 
 	"flush to somewhere else" and "flush don't know where"  */	
 
-replace toilet_mdg = . if toilet==.  | toilet==99
+replace toilet_mdg = . if toilet==.  | toilet==99  // 99 is handled in the code 1 line above in 2010 script, but there's no 99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 99
 	//Household is assigned a value of '.' if it has missing information 	
 	
 lab var toilet_mdg "Household has improved sanitation with MDG Standards"
@@ -1764,6 +1767,7 @@ codebook water_wet, tab(30)  // labels same as hv201
 
 tab timetowater_dry, miss nolabel
 tab timetowater_wet, miss nolabel
+codebook timetowater*, tab (9999)
 
 /*Some DHS might have the variable non-drinking water. Please try looking for it 
 as it will affect the poverty indicator. */
@@ -1809,7 +1813,7 @@ replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 	//Deprived if water is at more than 30 minutes' walk (roundtrip) 
 
 replace water_mdg = . if water_dry==. & water_wet==. 
-
+// 999 & 99 are handled in the 2 lines of code above in 2010 script, but there's no 999/99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 999/99
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
 tab water_mdg, miss
 
@@ -1840,7 +1844,8 @@ replace water_u = 0 if   (water_u==1 & timetowater_dry > 45 ///
 						  & timetowater_wet!=996 ///
 						  & timetowater_wet!=998)
 
-replace water_u = . if water_dry==. & water_wet==. 		
+replace water_u = . if water_dry==. & water_wet==. 	
+// same comment about 999 and 99 as in Standard MPI	
 lab var water_u "Household has drinking water with MDG standards (45 minutes distance)"
 tab water_u, miss
 
@@ -1976,7 +1981,7 @@ codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c  // hv244
 // na in DHS 5, but not DHS 6
 
 clonevar television = hv208 
-gen bw_television = .
+gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
 clonevar radio = hv207 
 clonevar telephone = hv221  // 3,877/47,917 has (land-line) telephone, 4 missing
 clonevar mobiletelephone = hv243a  	

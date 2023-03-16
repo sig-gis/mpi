@@ -980,11 +980,13 @@ save "$path_out/KHM10_merged_procd.dta", replace  // proccessed
 ***  Identification of non-deprived & deprived individuals  
 ********************************************************************************
 
+use "$path_out/KHM10_merged_procd.dta", clear 
+
 ********************************************************************************
 *** Step 2.1 Years of Schooling ***
 ********************************************************************************
 
-codebook hv108, tab(30)
+codebook hv108, tab(30)  // 1-25 in DHS 6, but 1-20 in DHS 5
 clonevar  eduyears = hv108   
 	//Total number of years of education
 replace eduyears = . if eduyears>30
@@ -1055,7 +1057,8 @@ label values attendance lab_attend
 label var attendance "Attended school during current school year"
 
 replace attendance = 0 if (attendance==9 | attendance==.) & hv109==0 
-
+// hv109 educational attainment
+// not used in 2014 script, but (0 real changes made) here, so the inconsistency is ok
 
 *** Standard MPI ***
 /*The entire household is considered deprived if any school-aged 
@@ -1137,7 +1140,7 @@ replace no_missing_atten_u = (no_missing_atten_u>=2/3)
 	/*Identify whether there is missing information on school attendance for 
 	more than 2/3 of the school age children attending up to class 6 */			
 tab no_missing_atten_u, miss
-	//Check that values for 0 are less than 1%
+	//Check that values for 0 are less than 1% (0%)
 label var no_missing_atten_u "No missing school attendance for at least 2/3 of the school aged children"		
 drop temp temp2 hhs		
 	
@@ -1155,7 +1158,7 @@ replace hh_child_atten_u = 1 if hh_children_schoolage_6==0
 replace hh_child_atten_u = . if hh_child_atten_u==0 & no_missing_atten_u==0 
 lab var hh_child_atten_u "Household has at least one school age children up to class 6 in school"
 tab hh_child_atten_u, miss
-
+// 3.96% 0, all others 1
 
 ********************************************************************************
 *** Step 2.3 Nutrition ***
@@ -1169,7 +1172,7 @@ lookfor body mass
 codebook ha40 
 	/*Check that information in ha40 and hb40 is not all missing. If hb40 is 
 	not present in the dataset, please remove hb40 */
-
+// ha40 BMI values ranges from 1217 to 5946 (there are also 6 9998 ["flagged cases"] and 601 9999)
 
 foreach var in ha40 {
 			 gen inf_`var' = 1 if `var'!=.
@@ -1462,7 +1465,7 @@ tab hh_nutrition_uw_st_u, miss
 *** Step 2.4 Child Mortality ***
 ********************************************************************************
 	
-codebook v206 v207 mv206 mv207
+codebook v206 v207 mv206 mv207  // mv206 mv207 are empty in 2014, but are available here
 
 
 	//Total child mortality reported by eligible women
@@ -1546,6 +1549,7 @@ lab var hh_mortality_u "Household had no under 18 child mortality in the last 5 
 
 clonevar electricity = hv206 
 codebook electricity, tab (10)
+// no, yes, 9
 replace electricity = . if electricity==9 
 	//Please check that missing values remain missing
 label var electricity "Household has electricity"
@@ -1577,8 +1581,9 @@ agreed guideline, we followed the report.
 
 clonevar toilet = hv205  
 	//Save the original variable
-codebook toilet, tab(30) 
+codebook toilet, tab(100) 
 	//Check coding
+	// 2010 questionnaire is the same as 2014; In this dataset, 11-43 all labeled the same as 2014; 96 & 99 not found in 2014 dataset but are present here
 codebook hv225, tab(30)  
 	//Check coding for shared toilet
 clonevar shared_toilet = hv225 
@@ -1666,6 +1671,8 @@ agreed guideline, we followed the report.
 	information. Household is identified as deprived if they had used 
 	non-improved source of drinking water in either dry or wet season, as well 
 	as walked more than 30 minutes in either season */
+/* 2010 vs 2014: the questionnaires are the same
+*/
 clonevar water = hv201 
 clonevar water_dry = sh102
 clonevar water_wet = sh104b
@@ -1674,13 +1681,15 @@ clonevar timetowater = hv204
 clonevar timetowater_dry = sh104  
 clonevar timetowater_wet = sh104d
 
-codebook water_dry, tab(30)
-codebook water_wet, tab(30)
+codebook water  // all missing
+codebook water_dry, tab(30)  // same labels as 2014 except that 99 found here is encoded as . 2014 data
+codebook water_wet, tab(30)  // same comment as water_dry
 
 tab water_dry water_wet, m
 
 codebook timetowater*, tab (9999)
-
+  // same labels as 2014 (996: on premises; 998: don't know) except that 999 found here is encoded as . 2014 data
+  
 clonevar ndwater = hv202  
 	//Cambodia DHS 2010-11 has no observation for non-drinking water. 
 	
@@ -1703,7 +1712,7 @@ replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
 						 water_dry==61 | water_dry==62 | water_dry==96 | ///
 						 water_wet==32 | water_wet==42 | water_wet==43 | ///
 						 water_wet==61 | water_wet==62 | water_wet==96 				 
-
+						 
 tab timetowater_dry, nol
 tab timetowater_wet, nol	
 replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
@@ -1765,11 +1774,13 @@ tab water_u, miss
 ********************************************************************************
 *** Step 2.8 Housing ***
 ********************************************************************************
+// 2010 & 2014 share the same questionnaires for floor, wall, and roof materials
 
 /* Members of the household are considered deprived if the household 
 has a dirt, sand or dung floor */
 clonevar floor = hv213 
 codebook floor, tab(100)
+// same labels as 2014 except 1) 12: dung found in 2014, but not here, 2) for code > 41, 96: other found here, but only . in 2014
 gen	floor_imp = 1
 replace floor_imp = 0 if floor==11 | floor==96  
 replace floor_imp = . if floor==. | floor==99 
@@ -1782,6 +1793,7 @@ made of natural or rudimentary materials. Please follow the report's definitions
 of natural or rudimentary materials. */
 clonevar wall = hv214 
 codebook wall, tab(100)	
+// same labels as 2014 except 1) 23: stone with mud found here, but not 2014, 2) 99 found here, but encoded as . in 2014 data
 gen	wall_imp = 1 
 replace wall_imp = 0 if wall<=28 | wall==96  	
 replace wall_imp = . if wall==. | wall==99 	
@@ -1792,7 +1804,8 @@ tab wall wall_imp, miss
 /* Members of the household are considered deprived if the household has roof 
 made of natural or rudimentary materials */
 clonevar roof = hv215
-codebook roof, tab(100)		
+codebook roof, tab(100)	
+// same labels as 2014 except 1) 24: plastic sheet found in 2014, but not here, 2) for codes > 39, 96 and 99 found here but only . found in 2014
 gen	roof_imp = 1 
 replace roof_imp = 0 if roof<=23 | roof==96  	
 replace roof_imp = . if roof==. | roof==99 	
@@ -1840,14 +1853,15 @@ https://apps.who.int/iris/bitstream/handle/10665/141496/9789241548885_eng.pdf
 */
 
 clonevar cookingfuel = hv226  
-
+// 2010 & 2014 share the same questionnaire for cooking fuel
+// same labels as 2014 except 1) 9: straw/shrubs/grass & 10: agricultural crop found in 2014 but not here, 2) for codes > 95, 96: other found here, but only . in 2014
 
 *** Standard MPI ***
 /* Members of the household are considered deprived if the 
 household uses solid fuels and solid biomass fuels for cooking. */
 *****************************************************************
 codebook cookingfuel, tab(99)
-gen	cooking_mdg = 1
+gen	cooking_mdg = 1  // 96: other is considered non-deprived
 replace cooking_mdg = 0 if cookingfuel>5 & cookingfuel<95 
 replace cooking_mdg = . if cookingfuel==. | cookingfuel==99
 lab var cooking_mdg "Household has cooking fuel by MDG standards"		 
@@ -1870,6 +1884,7 @@ lab var cooking_u "Household uses clean fuels for cooking"
 lookfor tv television plasma lcd	
 codebook hv208
 clonevar television = hv208 
+// 2010 & 2014 have same question in questionnaire
 lab var television "Household has television"	
 
 
@@ -1877,15 +1892,18 @@ lab var television "Household has television"
 lookfor radio walkman stereo
 codebook hv207
 clonevar radio = hv207 
+// 2010 & 2014 have same question in questionnaire
 lab var radio "Household has radio"	
 
 	
 ***	Handphone/telephone/iphone/mobilephone/ipod
+// 2010 & 2014 have same question in questionnaire
 lookfor telephone mobilephone ipod
 codebook hv221 hv243a
 clonevar telephone = hv221
 replace telephone=1 if telephone!=1 & hv243a==1	
 	//hv243a=mobilephone. Combine information on telephone and mobilephone.	
+// 2014 script does the combination in 2 lines, but the same results are achieved, so the inconsistency is ok
 tab hv243a hv221 if telephone==1,miss
 lab var telephone "Household has telephone (landline/mobilephone)"	
 
@@ -1894,6 +1912,7 @@ lab var telephone "Household has telephone (landline/mobilephone)"
 lookfor refrigerator 
 codebook hv209
 clonevar refrigerator = hv209 
+// 2010 & 2014 have same question in questionnaire
 lab var refrigerator "Household has refrigerator"
 
 
@@ -1901,13 +1920,16 @@ lab var refrigerator "Household has refrigerator"
 lookfor car voiture truck van
 codebook hv212
 clonevar car = hv212  
-lab var car "Household has car"		
+// 2014 questionnaire asks about ownership of "A car or truck, tractor or van?", but 2010 questionnaire asks about ownership of "A car or truck or van?"
+lab var car "Household has car"	
+
 
 		
 ***	Bicycle/cycle rickshaw
 lookfor bicycle bicyclette
 codebook hv210	
 clonevar bicycle = hv210 
+// 2010 & 2014 have same question in questionnaire
 lab var bicycle "Household has bicycle"	
 
 
@@ -1915,6 +1937,7 @@ lab var bicycle "Household has bicycle"
 lookfor motorbike moto
 codebook hv211
 clonevar motorbike = hv211 
+// 2010 & 2014 have same question in questionnaire
 lab var motorbike "Household has motorbike"	
 
 	
@@ -1929,6 +1952,7 @@ lab var computer "Household has computer"
 lookfor cart 
 codebook hv243c
 clonevar animal_cart = hv243c
+// 2010 & 2014 have same question in questionnaire
 lab var animal_cart "Household has animal cart"	
 
 
@@ -1987,6 +2011,7 @@ clonevar year_interview = hv007
 clonevar month_interview = hv006 
 clonevar date_interview = hv008
  
+save "$path_out/khm_dhs10_raw.dta", replace 
 	
 
 *** Rename key global MPI indicators for estimation ***
