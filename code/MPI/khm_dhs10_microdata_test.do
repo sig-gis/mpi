@@ -95,6 +95,7 @@ sum age_months
 gen mdate = mdy(hc18, hc17, hc19)
 gen bdate = mdy(hc30, hc16, hc31) if hc16 <= 31
 	//Calculate birth date in days from date of interview
+	//(188 missing values generated)
 replace bdate = mdy(hc30, 15, hc31) if hc16 > 31 
 	//If date of birth of child has been expressed as more than 31, we use 15
 gen age = (mdate-bdate)/30.4375 
@@ -103,7 +104,7 @@ sum age  // min is negative: one record with:
 // mdate	bdate
 // 18487	18489
 // also 2 ages are 0
-
+codebook age  // no missing
 
 gen  str6 ageunit = "months" 
 lab var ageunit "Months"
