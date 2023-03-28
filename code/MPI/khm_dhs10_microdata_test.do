@@ -748,7 +748,7 @@ tab subsample, miss
 
 /*Households are identified as having 'no eligible' members if there are no 
 applicable population, that is, children 0-5 years, adult women 15-49 years or 
-men 15-54 years. These households will not have information on relevant 
+men 15-49 years. These households will not have information on relevant 
 indicators of health. As such, these households are considered as non-deprived 
 in those relevant indicators.*/
 
@@ -766,7 +766,7 @@ gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss  // about 10% hh has no eligible women for anthromopetric
+tab no_fem_nutri_eligible, miss  // about 10% people are in households with no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
@@ -795,7 +795,7 @@ lab var no_male_nutri_eligible "Household has no eligible men for anthropometric
 *** No eligible men 15-49 years
 *** for child mortality indicator (if relevant)
 *****************************************
-// no_male_eligible all set to missing in 2014, but "male_eligible" is only found in the following lines, so the inconsistency is ok(?)
+// no_male_eligible all set to missing in 2014, but "male_eligible" is only found in the following lines, so the inconsistency is ok
 gen	male_eligible = (hv118==1)
 // hv118: eligibility for male interview
 bysort	hh_id: egen hh_n_male_eligible = sum(male_eligible)  
@@ -804,7 +804,7 @@ gen	no_male_eligible = (hh_n_male_eligible==0)
 	//Takes value 1 if the household had no eligible men for an interview
 lab var no_male_eligible "Household has no eligible man for interview"
 drop hh_n_male_eligible
-tab no_male_eligible, miss  // ~80% (of the 1/2 subsampled) households have a man eligible for interview
+tab no_male_eligible, miss  // ~80% (of people in the 1/2 subsampled households) are in households that have a man eligible for interview
 
 
 *** No eligible children under 5

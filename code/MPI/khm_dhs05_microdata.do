@@ -792,9 +792,19 @@ relevant indicators.*/
 *** No eligible women 15-49 years 
 *** for adult nutrition indicator
 ***********************************************
-tab ha13 if hv105>=15 & hv105<=19 & hv104==2, miss
+tab ha13 if hv105>=15 & hv105<=49 & hv104==2, miss
 // ha13: Result of measurement - height/weight
-tab ha13, miss  // measured, not measured ...
+// measured, not measured ...
+/* out of the 9096 women 15-49, 
+8539 measured
+333 not measured
+72 refused/other
+32 other
+120 9
+*/
+tab ha13, miss  
+// same counts as above, except there are 26569 more missing, making a total of 35665.
+// meaning, all people who are not woman 15-49 have ha13 missing
 gen fem_nutri_eligible = (ha13!=.)  //  26,569 missing (not eligible)
 tab fem_nutri_eligible, miss  // about 3/4 ppl. not eligible
 bysort hh_id: egen hh_n_fem_nutri_eligible = sum(fem_nutri_eligible) 	
@@ -802,13 +812,13 @@ gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss  // about 10% hh has no eligible women for anthromopetric
+tab no_fem_nutri_eligible, miss  // about 6.38% people are in households with no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
 *** for child mortality indicator
 *****************************************
-gen	fem_eligible = (hv117==1)  // hv117: Eligibility for female interview
+gen	fem_eligible = (hv117==1)  // hv117: Eligibility for female interview - child mortality indicator is construct from interview answers
 bysort	hh_id: egen hh_n_fem_eligible = sum(fem_eligible) 	
 	//Number of eligible women for interview in the hh
 gen	no_fem_eligible = (hh_n_fem_eligible==0)		
@@ -816,7 +826,7 @@ gen	no_fem_eligible = (hh_n_fem_eligible==0)
 lab var no_fem_eligible "Household has no eligible women for interview"
 drop fem_eligible hh_n_fem_eligible 
 tab no_fem_eligible, miss
-
+// about 9.6% people are in households with no eligible women for interview, more than households with no eligible women for anthropometric because some women who were eligible for height and weight measurements, but were not eligible for interview, but all of the people who were eligible for female interview were eligible for measurements
 
 *** No eligible men 
 *** for adult nutrition indicator (if relevant)
@@ -830,23 +840,17 @@ lab var no_male_nutri_eligible "Household has no eligible men for anthropometric
 *** No eligible men 
 *** for child mortality indicator (if relevant)
 *****************************************
-	/* In the case of Cambodia DHS 2014, information from men will not make a 
-	difference. This is because for MPI estimation, we have restricted the 
-	sample to the nutrition subsample. Recall that in a subsample of one in 
-	three households, all men aged 15-49 were eligible to be surveyed. Hence 
-	men in the 1/3 subsampled households have provided information on child 
-	mortality. However, it is only in two thirds of households, not selected 
-	for the male survey, all women 15-49 years and all children under five were 
-	eligible to be measured and weighed to assess their nutritional status (p.8). 
-	In other words, the subsample that has the anthropometric information from 
-	children and women, does not have information on child mortality from men. 
-	Hence, we identify this survey as not having child mortality information 
-	from men even though the data was collected */
-
-// all hv118 = not eligible
-// no_male_eligible is computed in 2010 script, but "male_eligible" is only found in the following 2 lines, so the inconsistency is ok(?)
-gen	no_male_eligible = .
+// no_male_eligible all set to missing in 2014, but "male_eligible" is only found in the following lines, so the inconsistency is ok
+gen	male_eligible = (hv118==1)
+// hv118: eligibility for male interview
+bysort	hh_id: egen hh_n_male_eligible = sum(male_eligible)  
+	//Number of eligible men for interview in the hh
+gen	no_male_eligible = (hh_n_male_eligible==0) 	
+	//Takes value 1 if the household had no eligible men for an interview
 lab var no_male_eligible "Household has no eligible man for interview"
+drop hh_n_male_eligible
+tab no_male_eligible, miss  // ~80% (of people in the 1/2 subsampled households) are in households that have a man eligible for interview
+
 
 
 *** No eligible children under 5
@@ -865,7 +869,7 @@ tab no_child_eligible, miss  // 1:0 about half:half
 *** No eligible women and men 
 *** for adult nutrition indicator
 ***********************************************
-		/*There is no male anthropometric data for Cambodia DHS 2014. So 
+		/*There is no male anthropometric data for Cambodia DHS 2005. So 
 		this variable is only made up of eligible adult women */
 gen	no_adults_eligible = (no_fem_nutri_eligible==1) 
 lab var no_adults_eligible "Household has no eligible women or men for anthropometrics"
@@ -878,12 +882,15 @@ tab no_adults_eligible, miss
 gen	no_child_fem_eligible = (no_child_eligible==1 & no_fem_nutri_eligible==1)
 lab var no_child_fem_eligible "Household has no children or women eligible for anthropometric"
 tab no_child_fem_eligible, miss 
+// 5.68% no_child_fem_eligible
+// about 6.38% people are in households with no eligible women for anthromopetric (no_fem_nutri_eligible)
+// among them, 0.7% have eligible child
 
 
 *** No Eligible Women, Men or Children 
 *** for nutrition indicator 
 ***********************************************
-		/*There is no male anthropometric data for Cambodia DHS 2014. So 
+		/*There is no male anthropometric data for Cambodia DHS 2005. So 
 		this variable is only made up of eligible adult women and 
 		children */
 gen no_eligibles = (no_fem_nutri_eligible==1 & no_child_eligible==1)
@@ -916,7 +923,9 @@ label var area "Area: urban-rural"
 
 
 //Relationship to the head of household 
-clonevar relationship = hv101  // 1-14, 98: DK, 99: Missing 
+clonevar relationship = hv101  // 1-14, 99: Missing 
+// the variable is not used in MPI, so the following lines are not inspected 
+/*
 codebook relationship, tab (20)
 recode relationship (1=1)(2=2)(3=3)(11=3)(4/10=4)(12=5)
 // treat adopted/foster child as son/daughter
@@ -927,7 +936,7 @@ label define lab_rel 1"head" 2"spouse" 3"child" 4"extended family" ///
 label values relationship lab_rel
 label var relationship "Relationship to the head of household"
 tab hv101 relationship, miss
-
+*/
 
 //Sex of household member	
 codebook hv104
@@ -936,7 +945,8 @@ clonevar sex = hv104
 label var sex "Sex of household member"
 
 
-//Household headship  // not used for MPI?
+//Household headship  // not used for MPI, so the following lines are not inspected
+/*
 bys	hh_id: egen missing_hhead = min(relationship)
 tab missing_hhead,m 
 gen household_head=.
@@ -950,11 +960,12 @@ label define head 1"male-headed" 2"female-headed"
 label values headship head
 label var headship "Household headship"
 tab headship, miss
+*/
 
 //Age of household member
 codebook hv105, tab (999)
-clonevar age = hv105  
-replace age = . if age>=98  // 98: DK, 99: Missing
+clonevar age = hv105  // 0-96, 97+
+replace age = . if age>=98  // 0 real changes made
 label var age "Age of household member"
 
 
@@ -974,7 +985,7 @@ lab var agec2 "age groups (2 groups)"
 //Marital status of household member  // not used elsewhere
 clonevar marital = hv115 
 codebook marital, tab (10)
-recode marital (0=1)(1=2)(8=.)
+recode marital (0=1)(1=2)(3=3)(4=4)(9=.)
 label define lab_mar 1"never married" 2"currently married" 3"widowed" ///
 					 4"divorced" 5"not living together"
 label values marital lab_mar	
@@ -986,7 +997,7 @@ tab hv115 marital, miss
 gen member = 1
 bysort hh_id: egen hhsize = sum(member)
 label var hhsize "Household size"
-tab hhsize, miss
+tab hhsize, miss  // 1-19
 drop member
 
 
@@ -1031,7 +1042,7 @@ save "$path_out/KHM05_merged_procd.dta", replace  // proccessed
 ***  Identification of non-deprived & deprived individuals  
 ********************************************************************************
 
-use "$path_out/KHM14_merged_procd.dta", clear 
+use "$path_out/KHM05_merged_procd.dta", clear 
 
 ********************************************************************************
 *** Step 2.1 Years of Schooling ***
@@ -1042,6 +1053,7 @@ clonevar  eduyears = hv108
 	//Total number of years of education
 replace eduyears = . if eduyears>30
 	//Recode any unreasonable years of highest education as missing value
+	// only 98 (don't know) and 99 in this dataset
 replace eduyears = . if eduyears>=age & age>0
 	/*The variable "eduyears" was replaced with a '.' if total years of 
 	education was more than individual's age */
@@ -1052,19 +1064,22 @@ replace eduyears = 0 if age < 10
 	
 	/*A control variable is created on whether there is information on 
 	years of education for at least 2/3 of the household members aged 10 years 
-	and older */	
+	and older */
+
 gen temp = 1 if eduyears!=. & age>=10 & age!=.
 bysort	hh_id: egen no_missing_edu = sum(temp)
-	/*Total household members who are 10 years and older with no missing 
+	/*no_missing_edu: Total household members who are 10 years and older with no missing 
 	years of education */
+
 gen temp2 = 1 if age>=10 & age!=.
 bysort hh_id: egen hhs = sum(temp2)
-	//Total number of household members who are 10 years and older 
+	//hhs: Total number of household members who are 10 years and older 
+
 replace no_missing_edu = no_missing_edu/hhs
 replace no_missing_edu = (no_missing_edu>=2/3)
 	/*Identify whether there is information on years of education for at 
 	least 2/3 of the household members aged 10 years and older */
-tab no_missing_edu, miss
+tab no_missing_edu, miss  // 99.79% people have at least 2/3 household members aged 10 years and older having information on years of education 
 label var no_missing_edu "No missing edu for at least 2/3 of the HH members aged 10 years & older"		
 drop temp temp2 hhs
 
@@ -1077,14 +1092,19 @@ gen	 years_edu6 = (eduyears>=6)
 	/* The years of schooling indicator takes a value of "1" if at least someone 
 	in the hh has reported 6 years of education or more */
 replace years_edu6 = . if eduyears==.
-bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone..
+bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone with 6 years of education or more (21,244 1's)
+//3 missing values generated: row 12036, 34443, 34444 - all HH members have missing years_edu6
+// note: max(0, .) = 0
 gen	hh_years_edu6 = (hh_years_edu6_1==1)
-replace hh_years_edu6 = . if hh_years_edu6_1==.
-replace hh_years_edu6 = . if hh_years_edu6==0 & no_missing_edu==0 
+replace hh_years_edu6 = . if hh_years_edu6_1==.  // the 3 missing values, 21,244 1's
+replace hh_years_edu6 = . if hh_years_edu6==0 & no_missing_edu==0  // set to missing if there's no one in the household with 6 years of education or more & missing edu for at least 2/3 of the HH members aged 10 years & older
 lab var hh_years_edu6 "Household has at least one member with 6 years of edu"
+// 3 missing because all members have missing information on years of education
+// additional 55 missing because there's no one in the household with 6 years of education or more & missing edu for at least 2/3 of the HH members aged 10 years & older
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
-	
 *** Destitution MPI ***
 /*The entire household is considered deprived if no household member 
 aged 10 years or older has completed at least one year of schooling.*/
@@ -1095,6 +1115,7 @@ bysort	hh_id: egen hh_years_edu_u = max(years_edu1)
 replace hh_years_edu_u = . if hh_years_edu_u==0 & no_missing_edu==0
 lab var hh_years_edu_u "Household has at least one member with 1 year of edu"
 
+**/
 
 ********************************************************************************
 *** Step 2.2 Child School Attendance ***

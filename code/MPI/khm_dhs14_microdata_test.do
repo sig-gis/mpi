@@ -775,7 +775,7 @@ the two-thirds subsample of households (p.7-8) */
 
 clonevar subsample = hv042  // hv042: Household selected for hemoglobin
 label var subsample "Households selected as part of nutrition subsample" 
-drop if subsample!=1  // drop 1/3 not selected (1/2 for 2005?)
+drop if subsample!=1  // drop 1/3 not selected (1/2 for 2005)
 tab subsample, miss	
 	
 	
@@ -802,7 +802,7 @@ gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss  // about 10% hh has no eligible women for anthromopetric
+tab no_fem_nutri_eligible, miss  // about 10% people are in households with no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
@@ -936,7 +936,7 @@ clonevar sex = hv104
 label var sex "Sex of household member"
 
 
-//Household headship  // not used for MPI?
+//Household headship  // not used for MPI
 bys	hh_id: egen missing_hhead = min(relationship)
 tab missing_hhead,m 
 gen household_head=.
