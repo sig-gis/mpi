@@ -192,6 +192,7 @@ lab var datalab "Working file"
 /*We now run the command to calculate the z-scores with the adofile */
 igrowup_restricted reflib datalib datalab gender age ageunit weight height ///
 measure oedema sw
+// z-scores not calculated for the negative age
 
 /*We now turn to using the dta file that was created and that contains 
 the calculated z-scores to create the child nutrition variables following WHO 
@@ -456,10 +457,10 @@ lookfor hv807c hv008 ha32
 gen age_month = hv008 - ha32  // date of interview - date of birth
 lab var age_month "Age in months, individuals 15-19 years (girls)"
 sum age_month
-count if age>228	
+count if age_month>228	
 	/*Note: For a couple of observations, we find that the age in months is 
 	beyond 228 months. In this secton, while calculating the z-scores, these 
-	cases will be excluded. However, in section 2.3, we will take the BMI 
+	cases will be excluded (which is the behavior of the who2007 command). However, in section 2.3, we will take the BMI 
 	information of these girls. */
 // Quite a few observations have age 228-240 months (19-20 years), suggesting potential age definition inconsistency. Same for 2010. However, the potential inconsistency is not investigated so as to align the script with the calculations done for 2010 and 2014.
 	
@@ -1248,6 +1249,7 @@ replace hh_child_atten_u = . if hh_child_atten_u==0 & no_missing_atten_u==0
 lab var hh_child_atten_u "Household has at least one school age children up to class 6 in school"
 tab hh_child_atten_u, miss
 **/
+
 
 ********************************************************************************
 *** Step 2.3 Nutrition ***
