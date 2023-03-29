@@ -1123,10 +1123,13 @@ lab var hh_years_edu_u "Household has at least one member with 1 year of edu"
 
 codebook hv121, tab (10)  // Member attended school during current school year
 clonevar attendance = hv121 
-recode attendance (2=1)  // count "attended at some time" as attendance (1)
-// doesn't recode (9=.) as in 2010 script, but ok because there's no missing value here
+recode attendance (2=1) (9=.)  // count "attended at some time" as attendance (1)
 codebook attendance, tab (10)
 
+label define lab_attend 1 "currently attending" 0 "not currently attending"
+label values attendance lab_attend
+label var attendance "Attended school during current school year"
+// 67 missing; 9272 attending; 26326 not attending
 		
 *** Standard MPI ***
 /*The entire household is considered deprived if any school-aged 
@@ -1135,47 +1138,48 @@ child is not attending school up to class 8. */
 gen	child_schoolage = (age>=6 & age<=14)
 	/*In Cambodia, the official school entrance age is 6 years.  
 	  So, age range is 6-14 (=6+8)  
-	  Source: "http://data.uis.unesco.org/?ReportId=163"  
-	  Table 2.5 (p.16) of the Camboadia DHS 2014 report, footnote 1, 
-	  establishes that the NAR for primary school is the percentage of the 
-	  primary school age (6-12 years) population that is attending primary 
-	  school. */
+	  Source: "http://data.uis.unesco.org/?ReportId=163"    */
 	  
 	
 	/*A control variable is created on whether there is no information on 
 	school attendance for at least 2/3 of the school age children */
 count if child_schoolage==1 & attendance==.
-	//Understand how many eligible school aged children don't have attendence info
-gen temp = 1 if child_schoolage==1 & attendance!=.
+	//Understand how many eligible school aged children don't have attendence info: 14
+gen temp = 1 if child_schoolage==1 & attendance!=.  // else temp = 0 (not at school age or missing attendance info)
 	/*Generate a variable that captures the number of eligible school aged 
 	children who are attending school */
 bysort hh_id: egen no_missing_atten = sum(temp)	
-	/*Total school age children with no missing information on school 
-	attendance */
+	/*(per household) Total school age children with no missing information on school 
+	attendance */ // 0-9
+
 gen temp2 = 1 if child_schoolage==1	
-bysort hh_id: egen hhs = sum(temp2)
+bysort hh_id: egen hhs = sum(temp2)  // 0-9
 	//Total number of household members who are of school age
-replace no_missing_atten = no_missing_atten/hhs 
-replace no_missing_atten = (no_missing_atten>=2/3)
+replace no_missing_atten = no_missing_atten/hhs  // 9034 missing because hhs (Total number of household members who are of school age) is 0
+replace no_missing_atten = (no_missing_atten>=2/3)  // 0 if <2/3; 1 if >=2/3 or missing (because total number of household members who are of school age is 0)
 	/*Identify whether there is missing information on school attendance for 
 	more than 2/3 of the school age children */			
 tab no_missing_atten, miss
-label var no_missing_atten "No missing school attendance for at least 2/3 of the school aged children"		
+label var no_missing_atten "No missing school attendance for at least 2/3 of the school aged children"	
+// 0 if <2/3; 1 if >=2/3 or missing	(because total number of household members who are of school age is 0)
 drop temp temp2 hhs
 		
 bysort hh_id: egen hh_children_schoolage = sum(child_schoolage)
 replace hh_children_schoolage = (hh_children_schoolage>0) 
 	//Control variable: 
-	//It takes value 1 if the household has children in school age
+	//It takes value 1 if the household has children in school age， 0 if not
 lab var hh_children_schoolage "Household has children in school age"
 
-gen	child_not_atten = (attendance==0) if child_schoolage==1
+gen	child_not_atten = (attendance==0) if child_schoolage==1  // . if not a child at school age; 0/1 otherwise: 1 if child not attending school; 0 if child attending school / missing school attendance information (replaced with . in the following line)
 replace child_not_atten = . if attendance==. & child_schoolage==1
-bysort	hh_id: egen any_child_not_atten = max(child_not_atten)
-gen	hh_child_atten = (any_child_not_atten==0) 
-replace hh_child_atten = . if any_child_not_atten==.
-replace hh_child_atten = 1 if hh_children_schoolage==0
-replace hh_child_atten = . if hh_child_atten==1 & no_missing_atten==0 
+bysort	hh_id: egen any_child_not_atten = max(child_not_atten)  // . if household has no child at school age / has children at school age but doesn't have attendance information; 0/1 otherwise: 1 if household has at least one child not attending, 0 if household has at least one child attending
+
+gen	hh_child_atten = (any_child_not_atten==0)  // 0 if household has no child at school age (to be updated to 1: non-deprived in the following 2 lines) / has children at school age but doesn't have attendance information (to be updated to . in the following line) / has at least one child not attending (deprived);
+  // 1 if household has at least one child attending (non-deprived)
+replace hh_child_atten = . if any_child_not_atten==.  // household has no child at school age / has children at school age but doesn't have attendance information
+replace hh_child_atten = 1 if hh_children_schoolage==0  // household has no child at school age: count as non-deprived
+
+replace hh_child_atten = . if hh_child_atten==1 & no_missing_atten==0  // set to . if household has at least 1 child attending (non-deprived) but household is missing school attendance for at least 2/3 of the school aged children
 	/*If the household has been intially identified as non-deprived, but has 
 	missing school attendance for at least 2/3 of the school aged children, then 
 	we replace this household with a value of '.' because there is insufficient 
@@ -1183,13 +1187,17 @@ replace hh_child_atten = . if hh_child_atten==1 & no_missing_atten==0
 lab var hh_child_atten "Household has all school age children up to class 8 in school"
 tab hh_child_atten, miss
 
-/*Note: The indicator takes value 1 if ALL children in school age are attending 
+/*Note: The indicator takes value 1 if ALL children in school age (with attendance information) are attending 
 school and 0 if there is at least one child not attending. Households with no 
 children receive a value of 1 as non-deprived. The indicator has a missing value 
 only when there are all missing values on children attendance in households that 
 have children in school age. */
+// The indicator should also have a missing value when a household has at least 1 child attending but is missing school attendance for at least 2/3 of the school aged children.
 
-	
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI ***
 /*The entire household is considered deprived if any school-aged 
 child is not attending school up to class 6. */ 
@@ -1239,7 +1247,7 @@ replace hh_child_atten_u = . if hh_child_atten_u==0 & no_missing_atten_u==0
 	information to conclusively conclude that the household is deprived */
 lab var hh_child_atten_u "Household has at least one school age children up to class 6 in school"
 tab hh_child_atten_u, miss
-
+**/
 
 ********************************************************************************
 *** Step 2.3 Nutrition ***
