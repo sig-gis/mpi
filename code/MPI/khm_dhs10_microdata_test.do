@@ -1218,7 +1218,7 @@ lab var m_low_bmi_u "BMI of male <17"
 
 
 *** Standard MPI: BMI-for-age for individuals 15-19 years 
-*** 				  and BMI for individuals 20-54 years ***
+*** 				  and BMI for individuals 20-49 years ***
 *******************************************************************  
 gen low_bmi_byage = 0
 lab var low_bmi_byage "Individuals with low BMI or BMI-for-age"
@@ -1466,7 +1466,7 @@ tab hh_nutrition_uw_st_u, miss
 *** Step 2.4 Child Mortality ***
 ********************************************************************************
 	
-codebook v206 v207 mv206 mv207  // mv206 mv207 are empty in 2014, but are available here
+codebook v206 v207 mv206 mv207  // mv206 mv207 are empty in 2014, but are available here and in 2005
 
 
 	//Total child mortality reported by eligible women
@@ -1616,6 +1616,7 @@ replace toilet_mdg = 0 if (toilet<23 | toilet==41)  & shared_toilet==1
 replace toilet_mdg = 0 if toilet == 14 | toilet == 15 | toilet==99 
 	/*Household is assigned a value of '0' if it uses non-improved sanitation: 
 	"flush to somewhere else" and "flush don't know where"  */	
+	// also if it's toilet facility type information is coded as 99
 
 replace toilet_mdg = . if toilet==.  
 	//Household is assigned a value of '.' if it has missing information 	

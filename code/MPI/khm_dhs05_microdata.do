@@ -1259,20 +1259,20 @@ tab hh_child_atten_u, miss
 ********************************************************************************
 *** Step 2.3a Adult Nutrition ***
 ********************************************************************************
-	//Cambodia DHS 2014 has no anthropometric data for adult men 
+	//Cambodia DHS 2005 has no anthropometric data for adult men 
 
 // ha40 BMI, range is 1200:6000 in DHS 6, but no range specified in DHS 5
 foreach var in ha40 {
 			 gen inf_`var' = 1 if `var'!=.
 			 bysort sex: tab age inf_`var'  // # of BMI obs. by sex & age
-			 //BMI data covers women 15-49 years. 
+			 //BMI data covers women 15-49 years. 9096 nonmissing observations
 			 drop inf_`var'
 			 }
 ***
 
 *** BMI Indicator for Women 15-49 years ***
 ******************************************************************* 
-gen	f_bmi = ha40/100
+gen	f_bmi = ha40/100  // 12.13-40.85, 99.98, 99.99
 lab var f_bmi "Women's BMI"
 gen	f_low_bmi = (f_bmi<18.5)
 replace f_low_bmi = . if f_bmi==. | f_bmi>=99.97
@@ -1286,7 +1286,7 @@ lab var f_low_bmi_u "BMI of women <17"
 
 *** BMI Indicator for Men 15-59 years ***
 ******************************************************************* 
-	//Note: Cambodia DHS 2014 has no anthropometric data for men. 
+	//Note: Cambodia DHS 2005 has no anthropometric data for men. 
 	
 gen m_bmi = .
 lab var m_bmi "Male's BMI"
@@ -1316,7 +1316,12 @@ the age group of 15-19 by their age in months where information is available */
 	//Replacement for girls: 
 replace low_bmi_byage = 1 if low_bmiage==1 & age_month!=.  
 // low_bmiage ("Teenage low bmi 2sd - WHO") calculated by who2007 in Step 1.4
+// age_month!=. if hv105>=15 & hv105<=19 & hv104==2 & hv042==1 (values range from 180 to 228 to 308)
+// 0 changes made because all low BMIs have been captured by f_low_bmi already
+
 replace low_bmi_byage = 0 if low_bmiage==0 & age_month!=.
+// 374 changed from 1 to 0: f_bmi is <18.5, but not considered low for teenagers (not below 2sd)
+
 	/*Replacements for boys - if there is no male anthropometric data for boys, 
 	then 0 changes are made: */
 replace low_bmi_byage = 1 if low_bmiage_b==1 & age_month_b!=.
@@ -1347,7 +1352,11 @@ tab hh_no_low_bmiage, miss
 	The variable has a missing value only when there is missing info on BMI 
 	for ALL eligible adults in the household */
 
-	
+
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI: BMI-for-age for individuals 15-19 years 
 *** 			     and BMI for individuals 20-49 years ***
 ********************************************************************************
@@ -1390,6 +1399,9 @@ drop low_bmi
 lab var hh_no_low_bmiage_u "Household has no adult with low BMI or BMI-for-age(<17/-3sd)"
 tab hh_no_low_bmiage_u, miss	
 
+**/
+
+
 
 ********************************************************************************
 *** Step 2.3b Child Nutrition ***
@@ -1401,13 +1413,17 @@ tab hh_no_low_bmiage_u, miss
 *** Standard MPI ***
 bysort hh_id: egen temp = max(underweight)  // "Child is undernourished (weight-for-age) 2sd - WHO"
 gen	hh_no_underweight = (temp==0) 
-	//Takes value 1 if no child in the hh is underweight 
+	//Takes value 1 if no child in the hh is underweight: 11071 are 1's; all the rest are 0's
 replace hh_no_underweight = . if temp==.
+	// all household members have missing information on underweight: 18064 0's changed to missing
 replace hh_no_underweight = 1 if no_child_eligible==1 
-	//Households with no eligible children will receive a value of 1
+	//Households with no eligible children will receive a value of 1: 17,480 missing to 1's
 lab var hh_no_underweight "Household has no child underweight - 2 stdev"
 drop temp
 
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
 *** Destitution MPI  ***
 bysort hh_id: egen temp = max(underweight_u)
@@ -1417,9 +1433,12 @@ replace hh_no_underweight_u = 1 if no_child_eligible==1
 lab var hh_no_underweight_u "Destitute: Household has no child underweight"
 drop temp
 
+**/
+
 
 *** Child Stunting Indicator ***
 ************************************************************************
+// Same logic as Child Underweight Indicator
 
 *** Standard MPI ***
 bysort hh_id: egen temp = max(stunting)  // "Child is stunted (length/height-for-age) 2sd - WHO"
@@ -1432,6 +1451,9 @@ lab var hh_no_stunting "Household has no child stunted - 2 stdev"
 drop temp
 
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI  ***
 bysort hh_id: egen temp = max(stunting_u)
 gen	hh_no_stunting_u = (temp==0) 
@@ -1440,9 +1462,12 @@ replace hh_no_stunting_u = 1 if no_child_eligible==1
 lab var hh_no_stunting_u "Destitute: Household has no child stunted"
 drop temp
 
+**/
+
 
 *** Child Wasting Indicator ***
 ************************************************************************
+// Same logic as Child Underweight Indicator
 
 *** Standard MPI ***
 bysort hh_id: egen temp = max(wasting)  // "Child is wasted (weight-for-length/height) 2sd - WHO"
@@ -1455,6 +1480,9 @@ lab var hh_no_wasting "Household has no child wasted - 2 stdev"
 drop temp
 
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI  ***
 bysort hh_id: egen temp = max(wasting_u)
 gen	hh_no_wasting_u = (temp==0) 
@@ -1462,6 +1490,8 @@ replace hh_no_wasting_u = . if temp==.
 replace hh_no_wasting_u = 1 if no_child_eligible==1 
 lab var hh_no_wasting_u "Destitute: Household has no child wasted"
 drop temp
+
+**/
 
 
 *** Child Either Underweight or Stunted Indicator ***
@@ -1477,12 +1507,17 @@ replace hh_no_uw_st = 1 if no_child_eligible==1
 lab var hh_no_uw_st "Household has no child underweight or stunted"
 
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI  ***
 gen hh_no_uw_st_u = 1 if hh_no_stunting_u==1 & hh_no_underweight_u==1
 replace hh_no_uw_st_u = 0 if hh_no_stunting_u==0 | hh_no_underweight_u==0
 replace hh_no_uw_st_u = . if hh_no_stunting_u==. & hh_no_underweight_u==.
 replace hh_no_uw_st_u = 1 if no_child_eligible==1 
 lab var hh_no_uw_st_u "Destitute: Household has no child underweight or stunted"	
+
+**/
 
 
 ********************************************************************************
@@ -1502,21 +1537,32 @@ in their respective nutrition variable. */
 
 gen	hh_nutrition_uw_st = 1
 replace hh_nutrition_uw_st = 0 if hh_no_low_bmiage==0 | hh_no_uw_st==0
+// deprived if either 15-49 year-olds or children are deprived: 14,363 observations
 replace hh_nutrition_uw_st = . if hh_no_low_bmiage==. & hh_no_uw_st==.
 	/*Replace indicator as missing if household has eligible adult and child 
 	with missing nutrition information */
+	// 1. if household has eligible adult and child, but missing one of adult / child, then the nonmissing one determines the indicator for the whole household: 187 observations
+	
+// 2. if one of adult / child not eligible:
+// the eligible one determines the indicator for the whole household
 replace hh_nutrition_uw_st = . if hh_no_low_bmiage==. & hh_no_uw_st==1 & no_child_eligible==1
 	/*Replace indicator as missing if household has eligible adult with missing 
-	nutrition information and no eligible child for anthropometric measures */ 
+	nutrition information and no eligible child for anthropometric measures */
+	// hh_no_low_bmiage==. if and only if household has eligible adult with missing nutrition information
+	// if there's no eligible child in a household, then hh_no_uw_st must be 1 since the household is considered non-deprived
 replace hh_nutrition_uw_st = . if hh_no_uw_st==. & hh_no_low_bmiage==1 & no_adults_eligible==1
 	/*Replace indicator as missing if household has eligible child with missing 
 	nutrition information and no eligible adult for anthropometric measures */ 
 replace hh_nutrition_uw_st = 1 if no_eligibles==1  
- 	/*We replace households that do not have the applicable population, that is, 
+ 	/*3. We replace households that do not have the applicable (eligible) population, that is, 
 	women 15-49 & children 0-5, as non-deprived in nutrition*/
 lab var hh_nutrition_uw_st "Household has no individuals malnourished"
 tab hh_nutrition_uw_st, miss
 
+
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
 *** Destitution MPI ***
 /* Members of the household are considered deprived if the household has a 
@@ -1546,12 +1592,15 @@ replace hh_nutrition_uw_st_u = 1 if no_eligibles==1
 lab var hh_nutrition_uw_st_u "Household has no individuals malnourished (destitution)"
 tab hh_nutrition_uw_st_u, miss
 
+**/
+
+
 
 ********************************************************************************
 *** Step 2.4 Child Mortality ***
 ********************************************************************************
 
-codebook v206 v207 mv206 mv207  // mv206 mv207 are empty
+codebook v206 v207 mv206 mv207  // mv206 mv207 are empty in 2014, but are available here and in 2010
 	//v206 or mv206: number of sons who have died 
 	//v207 or mv207: number of daughters who have died
 	
@@ -1559,7 +1608,7 @@ codebook v206 v207 mv206 mv207  // mv206 mv207 are empty
 	//Total child mortality reported by eligible women
 egen temp_f = rowtotal(v206 v207), missing
 replace temp_f = 0 if v201==0  // v201: Total children ever born
-bysort	hh_id: egen child_mortality_f = sum(temp_f), missing
+bysort	hh_id: egen child_mortality_f = sum(temp_f), missing  // treat missing values in temp_f as 0's (unless all values in a household are missing)
 lab var child_mortality_f "Occurrence of child mortality reported by women"
 tab child_mortality_f, miss
 drop temp_f
@@ -1573,6 +1622,7 @@ tab child_mortality_m, miss
 drop temp_m
 
 egen child_mortality = rowmax(child_mortality_f child_mortality_m)
+// if one of f/m missing, use the value of the other one
 lab var child_mortality "Total child mortality within household reported by women & men"
 tab child_mortality, miss	
 	
@@ -1608,7 +1658,7 @@ replace childu18_died_per_wom_5y = 0 if v201==0
 	/*This line replaces never-married women with 0 child death. If in your 
 	country dataset, child mortality information was only collected from 
 	ever-married women (check report), please activate this command line.*/	
-	// (p.127) Each woman age 15-49 was asked whether she had ever given birth, and, if she had, she was asked to report the number of sons and daughters who live with her, the number who live elsewhere, and the number who have died.
+	// according to 2014 report (p.127) Each woman age 15-49 was asked whether she had ever given birth, and, if she had, she was asked to report the number of sons and daughters who live with her, the number who live elsewhere, and the number who have died.
 	// same in 2005 report (p.121)
 replace childu18_died_per_wom_5y = 0 if no_fem_eligible==1 
 	/*Assign a value of "0" for:
@@ -1645,7 +1695,7 @@ deprived if the household has no electricity */
 ***************************************************
 clonevar electricity = hv206  // has na in DHS 5, but not DHS 6
 codebook electricity, tab (10)
-// doesn't replace 9 with . as in 2010 script, but ok because all values missing here have already been encoded as .
+replace electricity = . if electricity==9 
 label var electricity "Household has electricity"
 
 
@@ -1673,59 +1723,68 @@ agreed guideline, we followed the report.
 
 clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 5; na in DHS 5, but not DHS 6)
 codebook toilet, tab(100) 
-/*(10 FLUSH TOILET: not found in data, FLUSH TOILET categorized into 11-15
+/*recode manual of DHS 6:
+(10 FLUSH TOILET: not found in 2014 data, FLUSH TOILET categorized into 11-15
  11 Flush to piped sewer system IMPROVED
  12 Flush to septic tank IMPROVED
  13 Flush to pit latrine IMPROVED
  14 Flush to somewhere else
  15 Flush, don't know where
- 20 PIT TOILET LATRINE: not found in data, PIT TOILET LATRINE categorized into 21-23
+ 20 PIT TOILET LATRINE: not found in 2014 data, PIT TOILET LATRINE categorized into 21-23
  21 Ventilated Improved Pit latrine (VIP) IMPROVED
  22 Pit latrine with slab IMPROVED
  23 Pit latrine without slab/open pit
- 30 NO FACILITY
+ 30 NO FACILITY: not found in 2014 data
  31 No facility/bush/field
  41 Composting toilet IMPROVED
  42 Bucket toilet
  43 Hanging toilet/latrine
- 96 Other
- (m) 99 Missing */
+ 96 Other: not found in 2014 ata
+ (m) 99 Missing: not found in 2014 data */
 // In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: toilet over water, 61: no toilet/field/forest, 96: other. Same as 2014 & 2010 questionnaire, except in 2014 & 2010 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
 // 2005 report does tabulate categories as defined by unstats.un.org
+/* In 2005 dataset, the line of code above (codebook toilet) shows that 
+- numeric codes 11-23 are labeled the same as 2010 & 2014
+- 31 is labeled "no toilet/field/forest" here, but "no facility/bush/field" in 2010 & 2014
+- 41-99 are labeled the same as 2010 & 2014 (except that 96 & 99 not found in 2014 dataset)
+*/
 codebook hv225, tab(30)  // Share toilet with other households
 // has na in DHS 5, but not DHS 6
 clonevar shared_toilet = hv225 
-	//0=no;1=yes;.=missing
+	//0=no;1=yes;9/.=missing
+recode shared_toilet (9=.)
+tab shared_toilet, miss	
 
-	
 *** Standard MPI ***
 /*Members of the household are considered deprived if the household's 
 sanitation facility is not improved (according to the SDG guideline) 
 or it is improved but shared with other households*/
 ********************************************************************
-codebook toilet, tab(30) 
-	/*Note: In Cambodia, the report considers the category other open-response 
-	field. But we consider it as non-improved to be consistent with the 
-	indicator for destitution below */ 
-
 gen	toilet_mdg = ((toilet<23 | toilet==41) & shared_toilet!=1) 
 	/*Household is assigned a value of '1' if it uses improved sanitation and 
 	does not share toilet with other households  */
+	// all others are assigned 0 to be overriden
+	// toilet==14 | toilet==15 (non-improved) to be updated to 0
 	
 replace toilet_mdg = 0 if (toilet<23 | toilet==41)  & shared_toilet==1   
 	/*Household is assigned a value of '0' if it uses improved sanitation 
 	but shares toilet with other households  */	
 	
-replace toilet_mdg = 0 if toilet == 14 | toilet == 15
+replace toilet_mdg = 0 if toilet == 14 | toilet == 15 | toilet==99 
 	/*Household is assigned a value of '0' if it uses non-improved sanitation: 
-	"flush to somewhere else" and "flush don't know where"  */	
+	"flush to somewhere else" and "flush don't know where"  */
+	// also if it's toilet facility type information is coded as 99
 
-replace toilet_mdg = . if toilet==.  | toilet==99  // 99 is handled in the code 1 line above in 2010 script, but there's no 99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 99
+replace toilet_mdg = . if toilet==.  // 99 is handled in the code 1 line above in this script, but there's no 99 in the 2014 data, so the inconsistency is ok
 	//Household is assigned a value of '.' if it has missing information 	
 	
 lab var toilet_mdg "Household has improved sanitation with MDG Standards"
 tab toilet toilet_mdg, miss
 
+
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
 *** Destitution MPI ***
 /*Members of the household are considered deprived if household practises 
@@ -1743,6 +1802,9 @@ replace toilet_u = 1 if toilet!=31 & toilet!=96 & toilet!=. & toilet!=99
 	
 lab var toilet_u "Household does not practise open defecation or others"
 tab toilet toilet_u, miss
+
+**/
+
 
 
 ********************************************************************************
@@ -1851,6 +1913,10 @@ lab var water_mdg "Household has drinking water with MDG standards (considering 
 tab water_mdg, miss
 
 
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI ***
 /* Members of the household is identified as destitute if household 
 does not have access to safe drinking water, or safe water is more 
@@ -1881,6 +1947,9 @@ replace water_u = . if water_dry==. & water_wet==.
 // same comment about 999 and 99 as in Standard MPI	
 lab var water_u "Household has drinking water with MDG standards (45 minutes distance)"
 tab water_u, miss
+
+**/
+
 
 
 ********************************************************************************
@@ -1942,6 +2011,9 @@ lab var housing_1 "Household has roof, floor & walls that it is not low quality 
 tab housing_1, miss
 
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI ***
 /* Members of the household is deprived in housing if two out 
 of three components (roof and walls; OR floor and walls; OR 
@@ -1955,6 +2027,9 @@ replace housing_u = 0 if (floor_imp==0 & wall_imp==0 & roof_imp==1) | ///
 replace housing_u = . if floor_imp==. & wall_imp==. & roof_imp==.
 lab var housing_u "Household has one of three aspects(either roof,floor/walls) that is not low quality material"
 tab housing_u, miss
+
+**/
+
 
 
 ********************************************************************************
@@ -2066,6 +2141,9 @@ replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
 
 
+/**
+Destitution MPI is not used, so the following lines are not inspected 
+
 *** Destitution MPI ***
 /* Members of the household are considered deprived in assets if the household 
 does not own any assets.*/
@@ -2074,6 +2152,9 @@ does not own any assets.*/
 gen	hh_assets2_u = (car==1 | n_small_assets2>0)
 replace hh_assets2_u = . if car==. & n_small_assets2==.
 lab var hh_assets2_u "Household Asset Ownership: HH has car or at least 1 small assets incl computer & animal cart"
+
+**/
+
 
 
 ********************************************************************************

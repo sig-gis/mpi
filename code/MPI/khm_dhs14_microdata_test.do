@@ -793,7 +793,8 @@ relevant indicators.*/
 *** No eligible women 15-49 years 
 *** for adult nutrition indicator
 ***********************************************
-tab ha13 if hv105>=15 & hv105<=19 & hv104==2, miss
+tab ha13 if hv105>=15 & hv105<=49 & hv104==2, miss
+tab ha13, miss
 // ha13: Result of measurement - height/weight
 gen fem_nutri_eligible = (ha13!=.)
 tab fem_nutri_eligible, miss  // about 3/4 ppl. not eligible
@@ -1642,7 +1643,8 @@ agreed guideline, we followed the report.
 
 clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 5; na in DHS 5, but not DHS 6)
 codebook toilet, tab(100) 
-/*(10 FLUSH TOILET: not found in data, FLUSH TOILET categorized into 11-15
+/*recode manual of DHS 6:
+(10 FLUSH TOILET: not found in data, FLUSH TOILET categorized into 11-15
  11 Flush to piped sewer system IMPROVED
  12 Flush to septic tank IMPROVED
  13 Flush to pit latrine IMPROVED
@@ -1652,13 +1654,13 @@ codebook toilet, tab(100)
  21 Ventilated Improved Pit latrine (VIP) IMPROVED
  22 Pit latrine with slab IMPROVED
  23 Pit latrine without slab/open pit
- 30 NO FACILITY
+ 30 NO FACILITY: not found in data
  31 No facility/bush/field
  41 Composting toilet IMPROVED
  42 Bucket toilet
  43 Hanging toilet/latrine
- 96 Other
- (m) 99 Missing */
+ 96 Other: not found in data
+ (m) 99 Missing: not found in data */
 // In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: toilet over water, 61: no toilet/field/forest, 96: other. Same as 2014 & 2010 questionnaire, except in 2014 & 2010 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
 // 2005 report does tabulate categories as defined by unstats.un.org
 codebook hv225, tab(30)  // Share toilet with other households
