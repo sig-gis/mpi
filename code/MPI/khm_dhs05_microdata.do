@@ -1823,21 +1823,21 @@ agreed guideline, we followed the report.
 */
 
 
-	/* Note: Cambodia DHS 2014 has no observation for hv201 (source of drinking 
+	/* Note: Cambodia DHS 2005 has no observation for hv201 (source of drinking 
 	water). This is because, data on drinking water is collected for the dry and 
-	wet season. The sh102 variable captures the source of drinking water during 
-	the dry season and the sh104b variable captures the  source of drinking 
+	wet season. The hv201d variable captures the source of drinking water during 
+	the dry season and the hv201w variable captures the  source of drinking 
 	water during wet season. Similarly, there is no observation for hv204 
 	(time it takes to get the water). However, data on time to water is 
-	available for the dry season (sh104) and wet season (sh104d). Some 
-	30% of the households use different source of water between the dry and wet 
+	available for the dry season (hv204d) and wet season (hv204w). Some 
+	of the households use different source of water between the dry and wet 
 	season. As such we construct the drinking water variable using both 
 	information. Household is identified as deprived if they had used 
 	non-improved source of drinking water in either dry or wet season, as well 
 	as walked more than 30 minutes in either season */
-	// sh10xx variables not defined in recode manual
 	
 /* 2005 vs 2014: 
+
 According to the tables in the reports, both have improved water source
 categories defined by unstats.un.org, assuming bottled water == packaged
 water. The 2005 report further decomposes bottled water into improved vs 
@@ -1847,27 +1847,54 @@ non-improved source according to their water source for cooking and washing.").
 The 2005 report also has one more category under "time to obtain drinking 
 water" - water delivered, in addition to water on premises, < 30 mins, >= 30 
 mins, and DK.
+
+According to the questionnaires, 
+2014 sources of drinking water include the following: 
+PIPED WATER 
+PIPED INTO DWELLING 11 
+PIPED TO YARD/PLOT 12
+PUBLIC TAP/STANDPIPE 13 
+TUBE WELL OR BOREHOLE 21 
+DUG WELL 
+PROTECTED WELL 31 
+UNPROTECTED WELL 32 
+WATER FROM SPRING 
+PROTECTED SPRING 41 
+UNPROTECTED SPRING 42 
+RAINWATER 51
+TANKER TRUCK 61 
+CART WITH SMALL TANK 71 
+SURFACE WATER (RIVER/DAM/ LAKE/POND/STREAM/CANAL/ IRRIGATION CHANNEL) 81 
+BOTTLED WATER 91 
+OTHER 96
+
+2005 questionnaire includes 11-51 (and 96), but the rests are different from 2014:
+SURFACE WATER (RIVER/...) is coded as 61
+TANKER TRUCK is put together with WATER VENDOR as 71
+BOTTLED WATER is coded as 81
+
+In the options for "How long does it take to go there, get water, and come back?", 2005 has an additional option "ON PREMISES" (coded as 996) than 2014.
 */
 
 clonevar water = hv201  // same in DHS 5 & 6 except only DHS 5 has na
-clonevar water_dry = sh102
-clonevar water_wet = sh104b
+clonevar water_dry = hv201d
+clonevar water_wet = hv201w
 
 clonevar timetowater = hv204 
-clonevar timetowater_dry = sh104  
-clonevar timetowater_wet = sh104d
+clonevar timetowater_dry = hv204d  
+clonevar timetowater_wet = hv204w
 
-codebook water_dry, tab(30)  // labels same as hv201
-codebook water_wet, tab(30)  // labels same as hv201
+codebook water_dry, tab(30)  // same labels as 2010 except that 61==tanker truck for 2010, but tanker truck/water ventor here for 2005
+codebook water_wet, tab(30)  // same comment as water_dry
 
-tab timetowater_dry, miss nolabel
-tab timetowater_wet, miss nolabel
+tab timetowater_dry, miss nolabel  // same labels as 2010
+tab timetowater_wet, miss nolabel  // same labels as 2010
 codebook timetowater*, tab (9999)
 
 /*Some DHS might have the variable non-drinking water. Please try looking for it 
 as it will affect the poverty indicator. */
 clonevar ndwater = hv202  
-	//Cambodia DHS 2014 has no observation for non-drinking water. 
+	//Cambodia DHS 2005 has observations for non-drinking water, but neither 2010 nor 2014 does, so the variable is not used to create the poverty indicator for consistency.
 	
 
 *** Standard MPI ***
@@ -1896,19 +1923,23 @@ replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
 						 water_wet==61 | water_wet==62 | water_wet==96 				 
 	/*Deprived if it is unprotected well, unprotected spring, tanker truck
 	  surface water (river/lake, etc), cart with small tank, other */
-		
+	// no "cart with small tank" here for 2005
+
 replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 						  & timetowater_dry!=. ///
 						  & timetowater_dry!=996 /// on premises
-						  & timetowater_dry!=998) /// DK
+						  & timetowater_dry!=998 /// DK
+						  & timetowater_dry!=999) ///
 						  | (water_mdg==1 & timetowater_wet >= 30 ///
 						  & timetowater_wet!=. ///
 						  & timetowater_wet!=996 ///
-						  & timetowater_wet!=998)
+						  & timetowater_wet!=998 ///
+						  & timetowater_wet!=999)
 	//Deprived if water is at more than 30 minutes' walk (roundtrip) 
 
 replace water_mdg = . if water_dry==. & water_wet==. 
-// 999 & 99 are handled in the 2 lines of code above in 2010 script, but there's no 999/99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 999/99
+replace water_mdg = . if water_dry==99 & water_wet==99
+
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
 tab water_mdg, miss
 
@@ -1962,8 +1993,9 @@ clonevar floor = hv213  // na in DHS 5, but not DHS 6
 // 2005 questionnaire same as that of 2014 except in 2014, natural floor contains 2 categories (EARTH/SAND/CLAY & DUNG), where as in 2005, natural floor contains 1 category EARTH/CLAY
 codebook floor, tab(99)  // numeric codes correspond to those in questionnaire
 gen	floor_imp = 1
-replace floor_imp = 0 if floor<=12 | floor==96  
-	//Deprived if mud/earth, sand, dung, other 	
+replace floor_imp = 0 if floor<=12 | floor==96 
+	//Deprived if earth, clay, other 
+
 replace floor_imp = . if floor==. | floor==99 
 lab var floor_imp "Household has floor that it is not earth/sand/dung"
 tab floor floor_imp, miss		
@@ -1972,14 +2004,12 @@ tab floor floor_imp, miss
 /* Members of the household are considered deprived if the household has walls 
 made of natural or rudimentary materials */
 clonevar wall = hv214  // na in DHS 5, but not DHS 6
-// In the questionnaires, main material the walls is asked in 2005, whereas main material of the EXTERIOR walls is asked in 2014. The categories are otherwise more or less the same except in 2014, finished walls include covered adobe as an additional category (35 is wood plank in 2005, but in 2014 35 is covered adobe and 36 is wood plank).
+// In the questionnaires, main material of the walls is asked in 2005, whereas main material of the EXTERIOR walls is asked in 2014. The categories are otherwise more or less the same except in 2014, finished walls include covered adobe as an additional category (35 is wood plank in 2005, but in 2014 35 is covered adobe and 36 is wood plank).
 codebook wall, tab(99)  // numeric codes correspond to those in questionnaire
 gen	wall_imp = 1 
 replace wall_imp = 0 if wall<=28 | wall==96  
-	/*Deprived if no wall, cane/palms/trunk, mud/dirt, 
-	grass/reeds/thatch, pole/bamboo with mud, stone with mud, plywood,
-	cardboard, carton/plastic, uncovered adobe, canvas/tent, 
-	unburnt bricks, reused wood, other */		
+	/*Deprived if no walls, palm/bamboo/thatch, dirt, bamboo with mud, straw with mud, uncovered adobe, plywood, carton, reused wood, metal*/
+
 replace wall_imp = . if wall==. | wall==99 
 lab var wall_imp "Household has wall that it is not of low quality materials"
 tab wall wall_imp, miss	
@@ -2008,7 +2038,7 @@ gen housing_1 = 1
 replace housing_1 = 0 if floor_imp==0 | wall_imp==0 | roof_imp==0
 replace housing_1 = . if floor_imp==. & wall_imp==. & roof_imp==.
 lab var housing_1 "Household has roof, floor & walls that it is not low quality material"
-tab housing_1, miss
+tab housing_1, miss  // about half 0 half 1
 
 
 /**
@@ -2062,7 +2092,7 @@ lab var cooking_mdg "Household has cooking fuel by MDG standards"
 					"agricultural crop", "animal dung" */			 
 tab cookingfuel cooking_mdg, miss	
 
-	/*Note that in Cambodia DHS 2014, the category 'other' cooking fuel is not 
+	/*Note that in Cambodia DHS 2005, the category 'other' cooking fuel is not 
 	identified either as solid fuel or non-solid fuel. Hence this particular 
 	category is identified as 'non-deprived' */
 
@@ -2080,7 +2110,7 @@ lab var cooking_u "Household uses clean fuels for cooking"
 /* Members of the household are considered deprived if the household does not 
 own more than one of: radio, TV, telephone, bike, motorbike or refrigerator and 
 does not own a car or truck. */
-/* The list for 2014 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, refrigerator, computer or animal cart*/
+/* The list for 2014 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, computer or animal cart*/
 /* In 2005, telephone tabulated in report includes only mobile telephone, animal cart not tabulated in report. Non-mobile telephone is not asked about in questionnaire, but a question is asked about the ownership of an oxcart or horsecart. */
 /* Comparing the 2005 & 2014 questionnaires, motorbike question includes moped in 2005 but not in 2014. Motorcycle-cart is asked about in 2014, but not 2005. A question about ownership of an oxcart or horsecart is also asked in 2014. Car/truck question includes tractor in 2014, but not 2005. */
 
@@ -2091,7 +2121,7 @@ codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c  // hv244
 clonevar television = hv208 
 gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
 clonevar radio = hv207 
-clonevar telephone = hv221  // 3,877/47,917 has (land-line) telephone, 4 missing
+clonevar telephone = hv221  // all missing
 clonevar mobiletelephone = hv243a  	
 clonevar refrigerator = hv209 
 clonevar car = hv212  // car/truck  	
@@ -2100,20 +2130,15 @@ clonevar motorbike = hv211
 gen computer=.
 clonevar animal_cart = hv243c
 
-// count if hv221==1 & mobiletelephone!=1	// 256
-
 foreach var in television radio telephone mobiletelephone refrigerator ///
 			   car bicycle motorbike computer animal_cart {
 replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
 }
 	//Missing values replaced
-	
 
-	//Combine information on telephone and mobiletelephone
-replace telephone=1 if telephone==0 & mobiletelephone==1
-replace telephone=1 if telephone==. & mobiletelephone==1
-// telephone=1 if has either telephone/mobiletelephone
-// 43,385 1's, 4 missing
+replace telephone=1 if telephone!=1 & mobiletelephone==1	
+// telephone is 1 if household has either telephone or mobilephone
+
 
 	//Label indicators
 lab var television "Household has television"
@@ -2135,7 +2160,9 @@ refrigerator, computer or animal cart and does not own a car or truck.*/
 
 egen n_small_assets2 = rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
-   
+
+count if n_small_assets2==1 & car!=1 & telephone!=1  // if these 6041 deprived people own any land-line telephone, they would own 2 assets and therefore be non-deprived in asset ownership
+
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
@@ -2183,7 +2210,7 @@ clonevar year_interview = hv007
 clonevar month_interview = hv006 
 clonevar date_interview = hv008
  
-save "$path_out/khm_dhs14_raw.dta", replace 
+save "$path_out/khm_dhs05_raw.dta", replace 
 
 *** Rename key global MPI indicators for estimation ***
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)

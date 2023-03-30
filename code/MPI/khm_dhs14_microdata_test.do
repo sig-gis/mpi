@@ -1988,6 +1988,7 @@ clonevar television = hv208
 gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
 clonevar radio = hv207 
 clonevar telephone = hv221  // 3,877/47,917 has (land-line) telephone, 4 missing
+clonevar landline = hv221
 clonevar mobiletelephone = hv243a  	
 clonevar refrigerator = hv209 
 clonevar car = hv212  // car/truck  	
@@ -2029,9 +2030,11 @@ does not own more than one of: radio, TV, telephone, refrigerator, bike, motorbi
 refrigerator, computer or animal cart and does not own a car or truck.*/
 *****************************************************************************
 
-egen n_small_assets2 = rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
+egen n_small_assets2 =rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
-   
+
+count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // 47 non-deprived would be deprived if landline variable is excluded
+
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"

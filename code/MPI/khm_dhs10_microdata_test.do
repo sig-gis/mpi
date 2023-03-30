@@ -1729,7 +1729,7 @@ replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 						  & timetowater_wet!=999)
 
 						  
-replace water_mdg = . if water_dry==. & water_wet==.
+replace water_mdg = . if water_dry==. & water_wet==.  // water_dry and water_wet have 99, but not .
 replace water_mdg = . if water_dry==99 & water_wet==99
 
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
@@ -1903,8 +1903,10 @@ lab var radio "Household has radio"
 lookfor telephone mobilephone ipod
 codebook hv221 hv243a
 clonevar telephone = hv221
+clonevar landline = hv221
+clonevar mobiletelephone = hv243a
 replace telephone=1 if telephone!=1 & hv243a==1	
-	//hv243a=mobilephone. Combine information on telephone and mobilephone.	
+	//hv243a=mobilephone. Combine information on telephone and mobilephone: variable is 1 if has either telephone or mobilephone
 // 2014 script does the combination in 2 lines, but the same results are achieved, so the inconsistency is ok
 tab hv243a hv221 if telephone==1,miss
 lab var telephone "Household has telephone (landline/mobilephone)"	
@@ -1972,7 +1974,9 @@ refrigerator, computer or animal cart and does not own a car or truck.*/
 *****************************************************************************
 egen n_small_assets2 = rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
-   
+
+count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // 59 non-deprived would be deprived if landline variable is excluded
+
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
