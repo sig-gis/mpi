@@ -60,8 +60,6 @@ tab hc13 if hv120==1, miss
 	//4,032 (95.66%) of the 4,215 children have been measured // weight and height
 tab hc13 if hc3<=9990, miss  // hc3: height(cm) {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
 tab hc13 if hc2<=9990, miss  // hc2: weight, similar comment to 1 line above about hc3: height
-	/*For example, height and weight data is available for all 5,052 children 
-	who have been successfully measured */
 
 	/*Following the checks carried out above, we keep only eligible children in
 	this section since the interest is to generate measures for children under 
@@ -2212,6 +2210,8 @@ clonevar date_interview = hv008
  
 save "$path_out/khm_dhs05_raw.dta", replace 
 
+use "$path_out/khm_dhs05_raw.dta", clear
+
 *** Rename key global MPI indicators for estimation ***
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)
 recode hh_nutrition_uw_st 	(0=1)(1=0) , gen(d_nutr)
@@ -2223,7 +2223,10 @@ recode toilet_mdg 			(0=1)(1=0) , gen(d_sani)
 recode housing_1 			(0=1)(1=0) , gen(d_hsg)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst)
- 
+
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
 *** Rename key global MPI indicators for destitution estimation ***
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm)
@@ -2236,6 +2239,8 @@ recode toilet_u 			(0=1)(1=0) , gen(dst_sani)
 recode housing_u 			(0=1)(1=0) , gen(dst_hsg)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst) 
+**/
+
 
 
 *** Rename indicators for changes over time estimation ***	
@@ -2249,7 +2254,11 @@ recode toilet_mdg 			(0=1)(1=0) , gen(d_sani_01)
 recode housing_1 			(0=1)(1=0) , gen(d_hsg_01)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl_01)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst_01)	
-	
+
+
+
+/**
+Destitution MPI is not used, so the following lines are not inspected 
 
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm_01)
 recode hh_nutrition_uw_st_u (0=1)(1=0) , gen(dst_nutr_01)
@@ -2262,6 +2271,8 @@ recode housing_u 			(0=1)(1=0) , gen(dst_hsg_01)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl_01)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst_01) 
 
+**/
+
 
 	/*In this survey, the harmonised 'region_01' variable is the 
 	same as the standardised 'region' variable.*/	
@@ -2269,15 +2280,17 @@ clonevar region_01 = region
 
 
 *** Keep main variables require for MPI calculation ***
+// headship not kept as it is not computed and not required for MPI calculation
+
 keep hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2 ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst /// 
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 
 
 order hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2  ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst ///
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
@@ -2286,15 +2299,14 @@ d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 *** Generate coutry and survey details for estimation ***
 char _dta[cty] "Cambodia"
 char _dta[ccty] "KHM"
-char _dta[year] "2014" 	
+char _dta[year] "2005" 	
 char _dta[survey] "DHS"
 char _dta[ccnum] "116"
 char _dta[type] "micro"
-char _dta[class] "old_survey"
 
 
 *** Sort, compress and save data for estimation ***
 sort ind_id
 compress
 la da "Micro data for `_dta[ccty]' (`_dta[ccnum]') from `c(current_date)' (`c(current_time)')."
-save "$path_out/khm_dhs14.dta", replace 
+save "$path_out/khm_dhs05.dta", replace 
