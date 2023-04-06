@@ -2039,6 +2039,18 @@ lab var housing_1 "Household has roof, floor & walls that it is not low quality 
 tab housing_1, miss  // about half 0 half 1
 
 
+*** Standard MPI Customized***
+/* Members of the household is deprived in housing if the roof OR 
+floor are constructed from low quality materials.*/
+**************************************************************
+gen housing_no_wall = 1
+replace housing_no_wall = 0 if floor_imp==0 | roof_imp==0
+replace housing_no_wall = . if floor_imp==. & roof_imp==.
+lab var housing_no_wall "Household has roof & floor that it is not low quality material"
+tab housing_no_wall, miss  // about 30% 0 70% 1
+
+
+
 /**
 Destitution MPI is not used, so the following lines are not inspected 
 
