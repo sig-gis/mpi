@@ -1889,11 +1889,12 @@ clonevar wall = hv214  // na in DHS 5, but not DHS 6
 // In the questionnaires, main material the walls is asked in 2005, whereas main material of the EXTERIOR walls is asked in 2014. The categories are otherwise more or less the same except in 2014, finished walls include covered adobe as an additional category (35 is wood plank in 2005, but in 2014 35 is covered adobe and 36 is wood plank).
 codebook wall, tab(99)  // numeric codes correspond to those in questionnaire
 gen	wall_imp = 1 
-replace wall_imp = 0 if wall<=28 | wall==96  
+replace wall_imp = 0 if wall<=28 | wall==35 | wall==96  
 	/*Deprived if no wall, cane/palms/trunk, mud/dirt, 
 	grass/reeds/thatch, pole/bamboo with mud, stone with mud, plywood,
 	cardboard, carton/plastic, uncovered adobe, canvas/tent, 
-	unburnt bricks, reused wood, other */		
+	unburnt bricks, reused wood, other */
+	/* Harmonization: also deprived if covered adobe (wall==35). Covered adobe is available as an option of wall material in 2010 and 2014, but not 2005. Households with covered adobe walls in 2005 might have been classified as having "other" wall materials (wall==96, which is considered unimproved). To harmonize the housing indicator across the three years, covered adobe is considered an unimproved wall material in 2010 and 2014.*/
 replace wall_imp = . if wall==. | wall==99 
 lab var wall_imp "Household has wall that it is not of low quality materials"
 tab wall wall_imp, miss	
@@ -1905,10 +1906,11 @@ clonevar roof = hv215  // na in DHS 5, but not DHS 6
 // 2005 questionnaire more or less the same as that of 2014 except in 2014, rudimentary roofing contains 2 more categories & finished roofing contains 1 more category
 codebook roof, tab(99)		
 gen	roof_imp = 1 
-replace roof_imp = 0 if roof<=24 | roof==96  // numeric codes correspond to those in questionnaire
+replace roof_imp = 0 if roof<=24 | roof==32 | roof==96  // numeric codes correspond to those in questionnaire
 	/*Deprived if no roof, thatch/palm leaf, mud/earth/lump of earth, 
 	sod/grass, plastic/polythene sheeting, rustic mat, cardboard, 
 	canvas/tent, wood planks/reused wood, unburnt bricks, other */	
+	/* Harmonization: also deprived if wood (roof==35). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
 replace roof_imp = . if roof==. | roof==99 	
 lab var roof_imp "Household has roof that it is not of low quality materials"
 tab roof roof_imp, miss
@@ -1999,9 +2001,9 @@ codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c  // hv244
 clonevar television = hv208 
 gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
 clonevar radio = hv207 
-clonevar telephone = hv221  // 3,877/47,917 has (land-line) telephone, 4 missing
+clonevar telephone = hv221  // 3,877/47,917 have (land-line) telephone, 4 missing
 clonevar landline = hv221
-clonevar mobiletelephone = hv243a  	
+clonevar mobiletelephone = hv243a  // 43129/47917 have mobile, 4 missing, the rest don't	
 clonevar refrigerator = hv209 
 clonevar car = hv212  // car/truck  	
 clonevar bicycle = hv210 
@@ -2016,13 +2018,20 @@ foreach var in television radio telephone mobiletelephone refrigerator ///
 replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
 }
 	//Missing values replaced
-	
 
+
+// Harmonization: Exclude non-mobile telephone (landline). Replace the following chunk of code with the one below it. Landline is available in 2010 and 2014, but not 2005. To harmonize the asset indicator across the three years, landline is excluded from 2010 and 2014 indicators.
+
+/*
 	//Combine information on telephone and mobiletelephone
 replace telephone=1 if telephone==0 & mobiletelephone==1
 replace telephone=1 if telephone==. & mobiletelephone==1
 // telephone=1 if has either telephone/mobiletelephone
 // 43,385 1's, 4 missing
+*/
+
+replace telephone = mobiletelephone
+
 
 	//Label indicators
 lab var television "Household has television"
@@ -2045,7 +2054,7 @@ refrigerator, computer or animal cart and does not own a car or truck.*/
 egen n_small_assets2 =rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
 
-count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // 47 non-deprived would be deprived if landline variable is excluded
+// count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // Before harmonization: 47 non-deprived would be deprived if landline variable is excluded
 
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
@@ -2081,6 +2090,7 @@ clonevar psu = hv021
 label var psu "Primary sampling unit"
 label var strata "Sample strata"
 
+compare psu hv001  // no difference
 
 	//Retain year, month & date of interview:
 desc hv007 hv006 hv008
@@ -2102,6 +2112,8 @@ recode housing_1 			(0=1)(1=0) , gen(d_hsg)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst)
  
+/**
+Destitution MPI is not used, so the following lines are not run
 
 *** Rename key global MPI indicators for destitution estimation ***
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm)
@@ -2115,6 +2127,7 @@ recode housing_u 			(0=1)(1=0) , gen(dst_hsg)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst) 
 
+**/
 
 *** Rename indicators for changes over time estimation ***	
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm_01)
@@ -2127,7 +2140,9 @@ recode toilet_mdg 			(0=1)(1=0) , gen(d_sani_01)
 recode housing_1 			(0=1)(1=0) , gen(d_hsg_01)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl_01)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst_01)	
-	
+
+/**
+Destitution MPI is not used, so the following lines are not run
 
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm_01)
 recode hh_nutrition_uw_st_u (0=1)(1=0) , gen(dst_nutr_01)
@@ -2139,7 +2154,7 @@ recode toilet_u 			(0=1)(1=0) , gen(dst_sani_01)
 recode housing_u 			(0=1)(1=0) , gen(dst_hsg_01)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl_01)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst_01) 
-
+**/
 
 	/*In this survey, the harmonised 'region_01' variable is the 
 	same as the standardised 'region' variable.*/	
@@ -2147,15 +2162,17 @@ clonevar region_01 = region
 
 
 *** Keep main variables require for MPI calculation ***
+// Harmonization: headship not kept as it is not computed in 2005
+
 keep hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2 ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst /// 
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 
 
 order hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2 ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst ///
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
