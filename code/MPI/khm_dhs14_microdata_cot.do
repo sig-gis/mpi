@@ -16,7 +16,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/DHS/Cambodia/STATA" 	  
-global path_out "../../data/MPI/khm_dhs14"
+global path_out "../../data/MPI/khm_dhs14_cot"
 global path_ado "ado"
 
 
@@ -1533,7 +1533,8 @@ bysort	hh_id: egen child_mortality_f = sum(temp_f), missing
 lab var child_mortality_f "Occurrence of child mortality reported by women"
 tab child_mortality_f, miss
 drop temp_f
-	
+
+ 
 	//Total child mortality reported by eligible men	
 egen temp_m = rowtotal(mv206 mv207), missing
 replace temp_m = 0 if mv201==0
@@ -1542,11 +1543,21 @@ lab var child_mortality_m "Occurrence of child mortality reported by men"
 tab child_mortality_m, miss
 drop temp_m
 
+
+// Harmonization: Exclude child mortality reported by men. Replace the following chunk of code with the one below it. Child mortality reported by men is available in 2005 and 2010, but not in 2014. To harmonize the child mortality indicator across the three years, child mortality reported by men is excluded from 2005 and 2010 indicators.
+
+/*
 egen child_mortality = rowmax(child_mortality_f child_mortality_m)
 lab var child_mortality "Total child mortality within household reported by women & men"
 tab child_mortality, miss	
-	
-	
+*/	
+
+clonevar child_mortality = child_mortality_f
+lab var child_mortality "Total child mortality within household reported by women"
+tab child_mortality, miss
+compare child_mortality child_mortality_f
+
+
 *** Standard MPI *** 
 /* Members of the household are considered deprived if women in the household 
 reported mortality among children under 18 in the last 5 years from the survey 
@@ -1586,7 +1597,8 @@ replace childu18_died_per_wom_5y = 0 if no_fem_eligible==1
 	
 bysort hh_id: egen childu18_mortality_5y = sum(childu18_died_per_wom_5y), missing
 replace childu18_mortality_5y = 0 if childu18_mortality_5y==. & child_mortality==0
-	/*Replace all households as 0 death if women has missing value and men 
+	/*After harmonization, the line makes no change. 
+	Before harmonization, the line replaces all households as 0 death if women has missing value and men 
 	reported no death in those households */
 label var childu18_mortality_5y "Under 18 child mortality within household past 5 years reported by women"
 tab childu18_mortality_5y, miss		
