@@ -15,7 +15,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/DHS/Cambodia/STATA" 	  
-global path_out "../../data/MPI/khm_dhs10_test"
+global path_out "../../data/MPI/khm_dhs10_cot"
 global path_ado "ado"
 
 	
