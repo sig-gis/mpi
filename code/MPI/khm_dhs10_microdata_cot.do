@@ -1486,11 +1486,19 @@ lab var child_mortality_m "Occurrence of child mortality reported by men"
 tab child_mortality_m, miss
 drop temp_m
 
+// Harmonization: Exclude child mortality reported by men. Replace the following chunk of code with the one below it. Child mortality reported by men is available in 2005 and 2010, but not in 2014. To harmonize the child mortality indicator across the three years, child mortality reported by men is excluded from 2005 and 2010 indicators.
+
+/*
 egen child_mortality = rowmax(child_mortality_f child_mortality_m)
 lab var child_mortality "Total child mortality within household reported by women & men"
 tab child_mortality, miss	
-	
-	
+*/
+
+clonevar child_mortality = child_mortality_f
+lab var child_mortality "Total child mortality within household reported by women"
+tab child_mortality, miss
+compare child_mortality child_mortality_f
+
 *** Standard MPI *** 
 /* Members of the household are considered deprived if women in the household 
 reported mortality among children under 18 in the last 5 years from the survey 
@@ -1524,6 +1532,9 @@ replace childu18_died_per_wom_5y = 0 if no_fem_eligible==1
 bysort hh_id: egen childu18_mortality_5y = sum(childu18_died_per_wom_5y), missing
 replace childu18_mortality_5y = 0 if childu18_mortality_5y==. & child_mortality==0
 	/*Replace all households as 0 death if women has missing value and men 
+	reported no death in those households */
+	/*After harmonization, the line makes no change. 
+	Before harmonization, the line replaces all households as 0 death if women has missing value and men 
 	reported no death in those households */
 label var childu18_mortality_5y "Under 18 child mortality within household past 5 years reported by women"
 tab childu18_mortality_5y, miss		
@@ -1793,6 +1804,7 @@ tab floor floor_imp, miss
 /* Members of the household are considered deprived if the household has walls 
 made of natural or rudimentary materials. Please follow the report's definitions
 of natural or rudimentary materials. */
+/* Harmonization: also deprived if covered adobe (wall==35). Covered adobe is available as an option of wall material in 2010 and 2014, but not 2005. Households with covered adobe walls in 2005 might have been classified as having "other" wall materials (wall==96, which is considered unimproved). To harmonize the housing indicator across the three years, covered adobe is considered an unimproved wall material in 2010 and 2014.*/
 clonevar wall = hv214 
 codebook wall, tab(100)	
 // same labels as 2014 except 1) 23: stone with mud found here, but not 2014, 2) 99 found here, but encoded as . in 2014 data
@@ -1805,6 +1817,7 @@ tab wall wall_imp, miss
 	
 /* Members of the household are considered deprived if the household has roof 
 made of natural or rudimentary materials */
+/* Harmonization: also deprived if wood (roof==35). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
 clonevar roof = hv215
 codebook roof, tab(100)	
 // same labels as 2014 except 1) 24: plastic sheet found in 2014, but not here, 2) for codes > 39, 96 and 99 found here but only . found in 2014
@@ -1905,11 +1918,18 @@ codebook hv221 hv243a
 clonevar telephone = hv221
 clonevar landline = hv221
 clonevar mobiletelephone = hv243a
+
+// Harmonization: Exclude non-mobile telephone (landline). Replace the following chunk of code with the one below it. Landline is available in 2010 and 2014, but not 2005. To harmonize the asset indicator across the three years, landline is excluded from 2010 and 2014 indicators.
+
+/*
 replace telephone=1 if telephone!=1 & hv243a==1	
 	//hv243a=mobilephone. Combine information on telephone and mobilephone: variable is 1 if has either telephone or mobilephone
 // 2014 script does the combination in 2 lines, but the same results are achieved, so the inconsistency is ok
 tab hv243a hv221 if telephone==1,miss
 lab var telephone "Household has telephone (landline/mobilephone)"	
+*/
+
+replace telephone = mobiletelephone
 
 	
 ***	Refrigerator/icebox/fridge
@@ -1975,7 +1995,7 @@ refrigerator, computer or animal cart and does not own a car or truck.*/
 egen n_small_assets2 = rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
 
-count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // 59 non-deprived would be deprived if landline variable is excluded
+// count if n_small_assets2==2 & car!=1 & landline==1 & mobiletelephone==0  // Before harmonization: 59 non-deprived would be deprived if landline variable is excluded
 
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
@@ -2010,6 +2030,7 @@ clonevar psu = hv021
 label var psu "Primary sampling unit"
 label var strata "Sample strata"
 
+compare psu hv001
 
 	//Retain year, month & date of interview:
 desc hv007 hv006 hv008
@@ -2032,6 +2053,8 @@ recode housing_1 			(0=1)(1=0) , gen(d_hsg)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst)
  
+/**
+Destitution MPI is not used, so the following lines are not run
 
 *** Rename key global MPI indicators for destitution estimation ***
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm)
@@ -2044,7 +2067,8 @@ recode toilet_u 			(0=1)(1=0) , gen(dst_sani)
 recode housing_u 			(0=1)(1=0) , gen(dst_hsg)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst) 
- 
+
+**/
  
 *** Rename indicators for changes over time estimation ***	
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm_01)
@@ -2078,15 +2102,16 @@ clonevar region_01 = region
 
 
 *** Keep main variables require for MPI calculation ***
+// Harmonization: headship not kept as it is not computed in 2005
 keep hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2 ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst /// 
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 
 
 order hh_id ind_id psu strata subsample weight ///
-area region region_01 agec4 agec2 headship ///
+area region region_01 agec4 agec2 ///
 d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst ///
 d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
 d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
