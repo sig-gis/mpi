@@ -2157,14 +2157,20 @@ replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98
 }
 	//Missing values replaced
 
+// Harmonization: Exclude non-mobile telephone (landline). Replace the following chunk of code with the one below it. Landline is available in 2010 and 2014, but not 2005. To harmonize the asset indicator across the three years, landline is excluded from 2010 and 2014 indicators.
+
+/*
 replace telephone=1 if telephone!=1 & mobiletelephone==1	
 // telephone is 1 if household has either telephone or mobilephone
+*/
+
+replace telephone = mobiletelephone
 
 
 	//Label indicators
 lab var television "Household has television"
 lab var radio "Household has radio"	
-lab var telephone "Household has telephone (landline/mobilephone)"	
+lab var telephone "Household has mobilephone"	
 lab var refrigerator "Household has refrigerator"
 lab var car "Household has car"
 lab var bicycle "Household has bicycle"	
@@ -2224,6 +2230,7 @@ clonevar psu = hv021
 label var psu "Primary sampling unit"
 label var strata "Sample strata"
 
+compare psu hv001  // no difference 1-557
 
 	//Retain year, month & date of interview:
 desc hv007 hv006 hv008
