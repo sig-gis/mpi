@@ -710,7 +710,7 @@ save "$path_out/KHM10_merged.dta", replace
 /*The Global MPI is based on de jure (permanent) household members only. As 
 such, non-usual residents will be excluded from the sample. */
 
-use "$path_out/KHM14_merged.dta", clear
+use "$path_out/KHM10_merged.dta", clear
 
 clonevar resident = hv102 // usual resident 
 tab resident, miss  // 959 no, 2 missing (9), all others yes
@@ -1809,7 +1809,7 @@ clonevar wall = hv214
 codebook wall, tab(100)	
 // same labels as 2014 except 1) 23: stone with mud found here, but not 2014, 2) 99 found here, but encoded as . in 2014 data
 gen	wall_imp = 1 
-replace wall_imp = 0 if wall<=28 | wall==96  	
+replace wall_imp = 0 if wall<=28 | wall==35 | wall==96  	
 replace wall_imp = . if wall==. | wall==99 	
 lab var wall_imp "Household has wall that it is not of low quality materials"
 tab wall wall_imp, miss	
@@ -1817,12 +1817,12 @@ tab wall wall_imp, miss
 	
 /* Members of the household are considered deprived if the household has roof 
 made of natural or rudimentary materials */
-/* Harmonization: also deprived if wood (roof==35). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
+/* Harmonization: also deprived if wood (roof==32). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
 clonevar roof = hv215
 codebook roof, tab(100)	
 // same labels as 2014 except 1) 24: plastic sheet found in 2014, but not here, 2) for codes > 39, 96 and 99 found here but only . found in 2014
 gen	roof_imp = 1 
-replace roof_imp = 0 if roof<=23 | roof==96  	
+replace roof_imp = 0 if roof<=23 | roof==32 | roof==96  	
 replace roof_imp = . if roof==. | roof==99 	
 lab var roof_imp "Household has roof that it is not of low quality materials"
 tab roof roof_imp, miss
@@ -1930,7 +1930,7 @@ lab var telephone "Household has telephone (landline/mobilephone)"
 */
 
 replace telephone = mobiletelephone
-
+lab var telephone "Household has mobilephone"	
 	
 ***	Refrigerator/icebox/fridge
 lookfor refrigerator 
@@ -2030,7 +2030,7 @@ clonevar psu = hv021
 label var psu "Primary sampling unit"
 label var strata "Sample strata"
 
-compare psu hv001
+compare psu hv001  // no difference
 
 	//Retain year, month & date of interview:
 desc hv007 hv006 hv008
@@ -2039,8 +2039,9 @@ clonevar month_interview = hv006
 clonevar date_interview = hv008
  
 save "$path_out/khm_dhs10_raw.dta", replace 
-	
 
+
+use "$path_out/khm_dhs10_raw.dta", clear 	
 *** Rename key global MPI indicators for estimation ***
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)
 recode hh_nutrition_uw_st 	(0=1)(1=0) , gen(d_nutr)
@@ -2082,6 +2083,8 @@ recode housing_1 			(0=1)(1=0) , gen(d_hsg_01)
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl_01)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst_01)	
 	
+/**
+Destitution MPI is not used, so the following lines are not run
 
 recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm_01)
 recode hh_nutrition_uw_st_u (0=1)(1=0) , gen(dst_nutr_01)
@@ -2093,7 +2096,7 @@ recode toilet_u 			(0=1)(1=0) , gen(dst_sani_01)
 recode housing_u 			(0=1)(1=0) , gen(dst_hsg_01)
 recode cooking_u			(0=1)(1=0) , gen(dst_ckfl_01)
 recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst_01) 
-
+**/
 
 	/*In this survey, the harmonised 'region_01' variable is the 
 	same as the standardised 'region' variable.*/	

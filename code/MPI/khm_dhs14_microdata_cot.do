@@ -1910,7 +1910,7 @@ replace roof_imp = 0 if roof<=24 | roof==32 | roof==96  // numeric codes corresp
 	/*Deprived if no roof, thatch/palm leaf, mud/earth/lump of earth, 
 	sod/grass, plastic/polythene sheeting, rustic mat, cardboard, 
 	canvas/tent, wood planks/reused wood, unburnt bricks, other */	
-	/* Harmonization: also deprived if wood (roof==35). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
+	/* Harmonization: also deprived if wood (roof==32). Wood is available as an option of roof material in 2010 and 2014, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010 and 2014.*/
 replace roof_imp = . if roof==. | roof==99 	
 lab var roof_imp "Household has roof that it is not of low quality materials"
 tab roof roof_imp, miss
