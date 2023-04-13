@@ -2,16 +2,16 @@ clear all
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
-global path_data "../../data/MPI/khm_dhs10"
+global path_data "../../data/MPI/khm_dhs10_cot"
 
-use "$path_data/khm_dhs10_clustno.dta", clear 
+use "$path_data/khm_dhs10.dta", clear 
 
-levelsof clust_no, local(clust_nos)
+levelsof psu, local(clust_nos)
 foreach clust_no in `clust_nos' {
 
 display `clust_no'
-use "$path_data/khm_dhs10_clustno.dta", clear 
-keep if clust_no == `clust_no'
+use "$path_data/khm_dhs10.dta", clear 
+keep if psu == `clust_no'
 
 
 // adapted from Benin_dhs17-18.do	
