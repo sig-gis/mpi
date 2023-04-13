@@ -2,15 +2,15 @@ clear all
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
-global path_data "../../data/MPI/khm_dhs10_cot"
+global path_data "../../data/MPI/khm_dhs05_cot"
 
-use "$path_data/khm_dhs10.dta", clear 
+use "$path_data/khm_dhs05.dta", clear 
 
 levelsof psu, local(clust_nos)
 foreach clust_no in `clust_nos' {
 
 display `clust_no'
-use "$path_data/khm_dhs10.dta", clear 
+use "$path_data/khm_dhs05.dta", clear 
 keep if psu == `clust_no'
 
 
@@ -175,5 +175,5 @@ gen MPI_1_low95CI = table[rownumb(table, "ll"), 1]
 gen MPI_1_upp95CI = table[rownumb(table, "ul"), 1]
 
 
-save "$path_data/khm_dhs10_mpi_clust`clust_no'.dta", replace
+save "$path_data/khm_dhs05_mpi_clust`clust_no'.dta", replace
 }
