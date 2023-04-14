@@ -124,3 +124,9 @@ survey = 'khm_dhs10_cot'
 spatial_res = 'clust'
 n_spatial_unit = 611
 mpi_info_df = mpi_info_to_csv(survey, spatial_res, n_spatial_unit)
+
+# %%% harmonized cluster-level MPI based on Cambodia DHS 2005
+survey = 'khm_dhs05_cot'
+spatial_res = 'clust'
+n_spatial_unit = 557
+mpi_info_df = mpi_info_to_csv(survey, spatial_res, n_spatial_unit)
