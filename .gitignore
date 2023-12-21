@@ -14,6 +14,9 @@ data/boundaries/KHM_SALB_1998
 !data/CF/Cambodia
 data/CF/Cambodia/*
 !data/CF/Cambodia/Name of CB*
+!data/other
+data/other/CDB*
+!data/other/ncdd_admin_database*
 
 !output*
 
