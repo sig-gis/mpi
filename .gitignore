@@ -3,6 +3,7 @@
 !DHS_Cambodia_CF/DHS_Cambodia_CF.py
 
 !code
+code/MPI/.ipynb_checkpoints/*
 
 !data
 data/*
