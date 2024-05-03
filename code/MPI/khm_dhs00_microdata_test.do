@@ -14,12 +14,12 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/DHS/Cambodia/STATA" 	  
-global path_out "../../data/MPI/khm_dhs05_cot"
+global path_out "../../data/MPI/khm_dhs00_test"
 global path_ado "ado"
 
 
 ********************************************************************************
-*** Cambodia DHS 2005 ***
+*** Cambodia DHS 2000 ***
 ********************************************************************************
 
 
@@ -33,7 +33,7 @@ global path_ado "ado"
 *** Step 1.1 PR - CHILDREN's RECODE (under 5)
 ********************************************************************************
 
-use "$path_in/KHPR51DT/KHPR51FL.DTA", clear 
+use "$path_in/KHPR42DT/KHPR42FL.DTA", clear 
 
 
 *** Generate individual unique key variable required for data merging using:
@@ -43,21 +43,21 @@ use "$path_in/KHPR51DT/KHPR51FL.DTA", clear
 gen double ind_id = hv001*1000000 + hv002*100 + hvidx 
 format ind_id %20.0g
 label var ind_id "Individual ID"
-codebook ind_id  // unique identifier of 73010 ppl.
+codebook ind_id  // unique identifier of 66285 ppl.
 
 duplicates report ind_id
 
 
 tab hv120,miss  // DHS 6 recode manual: Children eligibility for height/weight and hemo  // variables have the same definition and recode map in DHS 5 unless otherwise noted
-	/*4,215 children under 5 are eligible for anthropometric 
+	/*4,031 children under 5 are eligible for anthropometric 
 	measurement. */	
 count if hc1!=.
-	//All 4,215 children under 5 have information on age in months
+	//All 4,031 children under 5 have information on age in months
 tab hv105 if hc1!=.
 	/*A cross check with the age in years reveal that all are within the 5 year 
 	age group */
 tab hc13 if hv120==1, miss
-	//4,032 (95.66%) of the 4,215 children have been measured // weight and height
+	//3,873 (96.08%) of the 4,031 children have been measured // weight and height
 tab hc13 if hc3<=9990, miss  // hc3: height(cm) {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
 tab hc13 if hc2<=9990, miss  // hc2: weight, similar comment to 1 line above about hc3: height
 
@@ -270,7 +270,7 @@ save "$path_out/KHM05_PR_child.dta", replace
 /*The purpose of step 1.2 is to identify children of any age who died in 
 the last 5 years prior to the survey date.*/
 
-use "$path_in/KHBR51DT/KHBR51FL.dta", clear
+use "$path_in/KHBR42DT/KHBR42FL.dta", clear
 
 		
 *** Generate individual unique key variable required for data merging
@@ -361,7 +361,7 @@ save "$path_out/KHM05_BR.dta", replace
 ********************************************************************************
 	
 use v001 v002 v003 v005 v012 v201 v206 v207 ///
-using "$path_in/KHIR51DT/KHIR51FL.dta", clear  // 16823 observations
+using "$path_in/KHIR42DT/KHIR42FL.dta", clear  // 16823 observations
 /*v005: sample weight
 v012: Current age - respondent
 v201: Total children ever born
@@ -400,7 +400,7 @@ save "$path_out/KHM05_IR.dta", replace
 ********************************************************************************
 /*The purpose of step 1.4 is to compute bmi-for-age for girls 15-19 years. */
 
-use "$path_in/KHPR51DT/KHPR51FL.dta", clear
+use "$path_in/KHPR42DT/KHPR42FL.dta", clear
 
 		
 *** Generate individual unique key variable required for data merging
@@ -586,14 +586,14 @@ save "$path_out/KHM05_PR_girls.dta", replace
 ***(All eligible man: 15-49 years in the household) 
 ********************************************************************************
 
-use "$path_in/KHMR51DT/KHMR51FL.dta", clear  // 6731 obs. 
+use "$path_in/KHMR42DT/KHMR42FL.dta", clear  // 6731 obs. 
 
 
 *** Generate individual unique key variable required for data merging
 	*** mv001=cluster number; 
 	*** mv002=household number;
 	*** mv003=respondent's line number
-gen double ind_id = mv001*1000000 + mv002*100 + mv003  // not in DHS 5? not in recode manual, but found in "$path_in/KHMR51DT/KHMR51FL.dta"
+gen double ind_id = mv001*1000000 + mv002*100 + mv003  // not in DHS 5? not in recode manual, but found in "$path_in/KHMR42DT/KHMR42FL.dta"
 format ind_id %20.0g
 label var ind_id "Individual ID"
 
@@ -628,7 +628,7 @@ save "$path_out/KHM05_MR.dta", replace
 *** Step 1.7  PR - HOUSEHOLD MEMBER'S RECODE 
 ********************************************************************************
 
-use "$path_in/KHPR51DT/KHPR51FL.dta", clear
+use "$path_in/KHPR42DT/KHPR42FL.dta", clear
 
 
 *** Generate a household unique key variable at the household level using: 
@@ -662,7 +662,7 @@ sort hh_id ind_id
 *****************************************
 merge 1:1 ind_id using "$path_out/KHM05_BR.dta"  // nrow*ncol: 10791*3
 // rows: one obs. per woman; cols: 2 variables + ind_id
-// merge: 2 variables added as 2 columns at the end of KHPR51FL.dta; values populated in rows where ind_id (in KHPR51FL.dta & KHM05_BR.dta) match; values denoted as missing in rows where ind_id in KHPR51FL.dta but not in KHM05_BR.dta
+// merge: 2 variables added as 2 columns at the end of KHPR42FL.dta; values populated in rows where ind_id (in KHPR42FL.dta & KHM05_BR.dta) match; values denoted as missing in rows where ind_id in KHPR42FL.dta but not in KHM05_BR.dta
 drop _merge
 // erase "$path_out/KHM14_BR.dta"
 
