@@ -2,7 +2,7 @@ clear all
 
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 // Working Folder Path
-global path_data "../../data/MPI/khm_dhs10_cot"
+global path_data "../../data/MPI/khm_dhs10_cot_nowall"
 
 use "$path_data/khm_dhs10.dta", clear 
 
