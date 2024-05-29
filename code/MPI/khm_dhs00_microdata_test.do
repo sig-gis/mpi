@@ -48,7 +48,7 @@ codebook ind_id  // unique identifier of 66285 ppl.
 duplicates report ind_id
 
 
-tab hv120,miss  // DHS 6 recode manual: Children eligibility for height/weight and hemo  // variables have the same definition and recode map in DHS 5 unless otherwise noted
+tab hv120,miss  // DHS 5 recode manual: Children eligibility for height/weight and hemo  // variables have the same definition and recode map in DHS 4 unless otherwise noted
 	/*4,031 children under 5 are eligible for anthropometric 
 	measurement. */	
 count if hc1!=.
@@ -58,22 +58,22 @@ tab hv105 if hc1!=.
 	age group */
 tab hc13 if hv120==1, miss
 	//3,873 (96.08%) of the 4,031 children have been measured // weight and height
-tab hc13 if hc3<=9990, miss  // hc3: height(cm) {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
-tab hc13 if hc2<=9990, miss  // hc2: weight, similar comment to 1 line above about hc3: height
+tab hc13 if hc3<=9990, miss  // hc3: height(cm), max 1304
+tab hc13 if hc2<=9990, miss  // hc2: weight, max 801
 
 	/*Following the checks carried out above, we keep only eligible children in
 	this section since the interest is to generate measures for children under 
 	5*/
 keep if hv120==1
 count	
-	//4,215 children under 5		
+	//4,031 children under 5		
 	
 	
 *** Check variables that WHO ado needs to calculate the z-scores:
 
 *** Variable: SEX ***
 desc hc27 hv104
-	/*hc27=sex of the child from biomarker questionnaire;
+	/*hc27=sex
 	hv104=sex from household roaster */
 compare hc27 hv104
 	//hc27 should match with hv104
@@ -95,9 +95,15 @@ sum age_months
 gen mdate = mdy(hc18, hc17, hc19)  // date measured m, d, yyyy
 gen bdate = mdy(hc30, hc16, hc31) if hc16 <= 31  // birth date
 	//Calculate birth date in days from date of interview
-	//(1,147 missing values generated)
+	//(1,114 missing values generated)
+count if bdate != .  // 2,917
+count if hc16 <= 31 // 2,918
+// one missing bdate generated with mdy(2, 30, 2000) - to replace 30 with 28
 replace bdate = mdy(hc30, 15, hc31) if hc16 > 31 
 	//If date of birth of child has been expressed as more than 31, we use 15
+	//(1,113 real changes made) = 726 "98" + 387 missing values in hc16
+count if bdate == .  // 1
+replace bdate = mdy(hc30, 28, hc31) if (bdate == .) & (hc30 == 2) & (hc16 > 28)
 gen age = (mdate-bdate)/30.4375  // (age in days when measured / average days in a month =) age in months when measured
 	//Calculate age in months with days expressed as decimals
 sum age  // min is negative
@@ -112,10 +118,10 @@ codebook hc2, tab (9999)
 gen	weight = hc2/10 
 	//We divide it by 10 in order to express it in kilograms 
 tab hc2 if hc2>9990, miss nol   
-	//Missing value is 9999
+	//Missing value is .
 replace weight = . if hc2>=9990 
 	//All missing values or out of range are replaced as "."
-sum weight
+sum weight  // ranges from 1 to 80.1 kg
 tab	hc13 hc2 if hc2>=9990 | hc2==., miss 
 	//hc13: result of the measurement 
 
@@ -125,19 +131,21 @@ codebook hc3, tab (9999)
 gen	height = hc3/10 
 	//We divide it by 10 in order to express it in centimeters
 tab hc3 if hc3>9990, miss nol   
-	//Missing value is 9999
+	//Missing value is .
 replace height = . if hc3>=9990 
 	//All missing values or out of range are replaced as "."
 tab	hc13 hc3   if hc3>=9990 | hc3==., miss 
-sum height
+sum height  // ranges from 36 to 130.4 cm
 
 
 *** Variable: MEASURED STANDING/LYING DOWN ***	
 codebook hc15  
-/* 0 Not measured  // 0 is in DHS 6, not 5 - according to recode manual, 0 not found in 2005, but 0 found in 2010
- 1 Lying
- 2 Standing
- (m) 9 Missing */
+/* 0 Not measured  // 0 is in DHS 6, not 5 or 4 - according to recode manual, 0 not found in 2000 or 2005, but 0 found in 2010
+ Freq.   Numeric  Label
+ 1,495         1  lying
+ 2,361         2  standing
+ 175           .  
+ */
 gen measure = "l" if hc15==1 
 	//Child measured lying down
 replace measure = "h" if hc15==2 
@@ -200,11 +208,11 @@ use "$path_out/children_nutri_khm_z_rc.dta", clear
 	
 *** Standard MPI indicator ***
 	//Takes value 1 if the child is under 2 stdev below the median & 0 otherwise
-sum _zwei  //  -6.68 - 43.49
+sum _zwei  //  -10.05 - 62.31
 gen	underweight = (_zwei < -2.0) 
 replace underweight = . if _zwei == . | _fwei==1
 lab var underweight  "Child is undernourished (weight-for-age) 2sd - WHO"
-tab underweight [aw=hv005], miss  // 69.09% not underweight
+tab underweight [aw=hv005], miss  // 57.93% not underweight
 
 
 gen stunting = (_zlen < -2.0)
@@ -238,13 +246,13 @@ lab var wasting_u  "Child is wasted (weight-for-length/height) 3sd - WHO"
  
  
 count if _fwei==1 | _flen==1 	
-	/* 78 children were replaced as missing because they have extreme 
+	/* 119 children were replaced as missing because they have extreme 
 	z-scores which are biologically implausible. */
  
 
 gen child_PR=1 
 	//Identification variable for children under 5 in PR recode
-sum child_PR  //  4,215 of them
+sum child_PR  //  4,031 of them
 tab hv120, miss  //   all eligible for measurement
 	
 clonevar weight_ch = hv005  // divided by 1e6 in 2010 script, but weight_ch not used for calculation, so the inconsistency is ok
@@ -254,7 +262,7 @@ clonevar weight_ch = hv005  // divided by 1e6 in 2010 script, but weight_ch not 
 keep  ind_id child_PR weight_ch underweight* stunting* wasting*  // child_PR not retained in 2010 script
 order ind_id child_PR weight_ch underweight* stunting* wasting* 
 sort  ind_id
-save "$path_out/KHM05_PR_child.dta", replace
+save "$path_out/KHM00_PR_child.dta", replace
 
 
 	//Erase files from folder:
@@ -280,9 +288,9 @@ use "$path_in/KHBR42DT/KHBR42FL.dta", clear
 gen double ind_id = v001*1000000 + v002*100 + v003 
 format ind_id %20.0g
 label var ind_id "Individual ID"
+codebook ind_id
 
-
-desc b3 b7  // b3: date of birth (cmc) - none missing; b7: age at death (months, imputed) -  34,960 /40,457 missing? not dead?
+desc b3 b7  // b3: date of birth (cmc) - none missing; b7: age at death (months, imputed) - most missing? not dead?
 gen date_death = b3 + b7
 	//Date of death = date of birth (b3) + age at death (b7)
 gen mdead_survey = v008 - date_death
@@ -312,7 +320,7 @@ bysort ind_id: egen tot_child_died = sum(child_died)
 egen tot_child_died_2 = rsum(v206 v207)
 	//v206: sons who have died; v207: daughters who have died
 compare tot_child_died tot_child_died_2
-	//Cambodia DHS 2005: these figures are identical
+	//Cambodia DHS 2000: these figures are identical
 	
 		
 	//Identify child under 18 mortality in the last 5 years
@@ -332,13 +340,13 @@ replace tot_child18_died_5y=0 if tot_child18_died_5y==. & tot_child_died>=0 & to
 replace tot_child18_died_5y=. if child18_died==1 & ydead_survey==.
 	//Replace as '.' if there is no information on when the child died  
 
-tab tot_child_died tot_child18_died_5y, miss  // 0-3
+tab tot_child_died tot_child18_died_5y, miss  // 0-4
 
 bysort ind_id: egen childu18_died_per_wom_5y = max(tot_child18_died_5y)
 lab var childu18_died_per_wom_5y "Total child under 18 death for each women in the last 5 years (birth recode)"
 	
 
-	//Keep one observation per women  // 10791 women
+	//Keep one observation per women  // 9930 women
 bysort ind_id: gen id=1 if _n==1
 keep if id==1
 drop id
@@ -352,7 +360,7 @@ gen women_BR = 1
 keep ind_id women_BR childu18_died_per_wom_5y 
 order ind_id women_BR childu18_died_per_wom_5y
 sort ind_id
-save "$path_out/KHM05_BR.dta", replace	
+save "$path_out/KHM00_BR.dta", replace	
 	
 	
 ********************************************************************************
@@ -391,7 +399,7 @@ gen women_IR=1
 keep ind_id women_IR v003 v005 v012 v201 v206 v207 
 order ind_id women_IR v003 v005 v012 v201 v206 v207 
 sort ind_id
-save "$path_out/KHM05_IR.dta", replace
+save "$path_out/KHM00_IR.dta", replace
 
 
 ********************************************************************************
@@ -411,35 +419,25 @@ codebook ind_id
 
 
 *** Identify anthropometric sample for girls
-tab ha13 hv027 if hv105>=15 & hv105<=19 & hv104==2, miss
-tab ha13 hv042 if hv105>=15 & hv105<=19 & hv104==2, miss
+tab ha13 hv117 if hv105>=15 & hv105<=19 & hv104==2, miss	
+tab ha13 hv103 if hv105>=15 & hv105<=19 & hv104==2, miss
 /*ha13: Result of measurement - height/weight
-hv027: Selection for male/husb. int.
-hv042: Household selected for hemoglobin
-hv105: age of hh member
-hv104: sex of hh member
-*/
-// The above two lines give the same results.
-	/*Total number of girls 15-19 years who live in household selected for 
-	male survey and have anthropometric data: 1,832 */  // have anthropometric data meaning "result of measurement..." = "measured"
-
-tab ha13 hv117 if hv105>=15 & hv105<=19 & hv104==2 & hv042==1, miss	
-tab ha13 hv103 if hv105>=15 & hv105<=19 & hv104==2 & hv042==1, miss
-/*hv117: Eligibility for female interview
+hv117: Eligibility for female interview
 hv103: Slept last night
 */
 // The above two lines give the same results.
-	/*64 of the 1,832 women 15-19 years are identified as non-eligible
+	/*25 of the 1,674 women 15-19 years are identified as non-eligible
 	for the female interview as they did not sleep the night before in the 
 	household. Hence they will not have data on child mortality but they have 
 	anthropometric information as they were measured. */
 	
 		
 *** Keep relevant sample	
-keep if hv105>=15 & hv105<=19 & hv104==2 & hv042==1
-// age 15-19, sex female, hh selected for hemoglobin (hh selected for male interview - hh in which female height and weight are measured)
+keep if hv105>=15 & hv105<=19 & hv104==2 & ha13!=.
+// age 15-19, sex female
+// Note hv042==1 - hh selected for hemoglobin measurements - is used instead of ha13!=. to filter relevant sample in 2005, 2010, and 2014, that is because those households are the ones selected for male interview and also the ones in which female height and weight are measured. In 2000, a random "subsample of 50 percent of households was selected for data collection of anthropometry". Missing values in ha13 - Women's result of measurement - is assumed to indicate the people not selected.
 count
-	//Total girls 15-19 years: 2,007
+	//Total girls 15-19 years: 1,727
 
 
 ***Variables required to calculate the z-scores to produce BMI-for-age:
@@ -460,7 +458,7 @@ count if age_month>228
 	beyond 228 months. In this secton, while calculating the z-scores, these 
 	cases will be excluded (which is the behavior of the who2007 command). However, in section 2.3, we will take the BMI 
 	information of these girls. */
-// Quite a few observations have age 228-240 months (19-20 years), suggesting potential age definition inconsistency. Same for 2010. However, the potential inconsistency is not investigated so as to align the script with the calculations done for 2010 and 2014.
+// Quite a few observations have age 228-240 months (19-20 years), suggesting potential age definition inconsistency. Same for 2005 and 2010. However, the potential inconsistency is not investigated so as to align the script with the calculations done for 2005, 2010 and 2014.
 	
 *** Variable: AGE UNIT ***
 gen str6 ageunit = "months" 
@@ -468,23 +466,23 @@ lab var ageunit "Months"
 
 			
 *** Variable: BODY WEIGHT (KILOGRAMS) ***
-codebook ha2, tab (9999)  // ha2: weight {9999:missing,na:na} // in DHS 6, not 5: 9994-9996:not present/refused/other
+codebook ha2, tab (9999)  // ha2: weight
 count if ha2>9990 
 tab ha13 if ha2>9990, miss
 gen weight = ha2/10 if ha2<9990
 	/*Weight information from girls. We divide it by 10 in order to express 
 	it in kilograms. Missing values or out of range are identified as "." */	
-sum weight  // 17.2-145.9
+sum weight  // 0.4, 5.6, 11.5-145.9 - 0.4 and 5.6 weights are considered implausible so their BMI values are set to missing later with "replace z_bmi = ."
 
 
 *** Variable: HEIGHT (CENTIMETERS)	
-codebook ha3, tab (9999)  // ha3: height, similar comment to a few lines above about ha2: weight
+codebook ha3, tab (9999)  // ha3: height
 count if ha3>9990 
 tab ha13 if ha3>9990, miss
 gen height = ha3/10 if ha3<9990
 	/*Height information from girls. We divide it by 10 in order to express 
 	it in centimeters. Missing values or out of range are identified as "." */
-sum height  // 99-170.4
+sum height  // 91.2-176
 
 
 *** Variable: OEDEMA
@@ -540,10 +538,10 @@ use "$path_out/girl_nutri_khm_z.dta", clear
 	
 gen	z_bmi = _zbfa
 replace z_bmi = . if _fbfa==1 
-	/*Cambodia DHS 2005: 3 girls 15-19 years were replaced as missing because 
+	/*Cambodia DHS 2000: 2 girls 15-19 years were replaced as missing because 
 	she has extreme z-scores which are biologically implausible. */
 lab var z_bmi "z-score bmi-for-age WHO"
-sum z_bmi  // -3.57 to 3.32
+sum z_bmi  // -3.76 to 2.3
 
 *** Standard MPI indicator ***
 	/*Takes value 1 if BMI-for-age is under 2 stdev below the median & 0 
@@ -572,7 +570,7 @@ gen girl_PR=1
 keep ind_id girl_PR age_month low_bmiage*
 order ind_id girl_PR age_month low_bmiage*
 sort ind_id
-save "$path_out/KHM05_PR_girls.dta", replace
+save "$path_out/KHM00_PR_girls.dta", replace
 
 
 	//Erase files from folder:
@@ -585,41 +583,17 @@ save "$path_out/KHM05_PR_girls.dta", replace
 *** Step 1.5  MR - MEN'S RECODE  
 ***(All eligible man: 15-49 years in the household) 
 ********************************************************************************
+	/*Note: In the case of Cambodia 2000, data was not 
+	collected for men. Hence the commands under this section have been 
+	removed */
 
-use "$path_in/KHMR42DT/KHMR42FL.dta", clear  // 6731 obs. 
-
-
-*** Generate individual unique key variable required for data merging
-	*** mv001=cluster number; 
-	*** mv002=household number;
-	*** mv003=respondent's line number
-gen double ind_id = mv001*1000000 + mv002*100 + mv003  // not in DHS 5? not in recode manual, but found in "$path_in/KHMR42DT/KHMR42FL.dta"
-format ind_id %20.0g
-label var ind_id "Individual ID"
-
-duplicates report ind_id
-
-tab mv012, miss  // age 15-49
-codebook mv201 mv206 mv207,tab (999)  // Total children ever born, Sons who have died, Daughters who have died
-	/*Cambodia DHS 2014: Fertility and mortality question was only 
-	collected from men 15-49 years.*/
-	
-gen men_MR=1 	
-	//Identification variable for observations in MR recode
-
-
-
-keep ind_id men_MR mv003 mv005 mv012 mv201 mv206 mv207 
-order ind_id men_MR mv003 mv005 mv012 mv201 mv206 mv207 
-sort ind_id
-save "$path_out/KHM05_MR.dta", replace
 
 
 ********************************************************************************
 *** Step 1.6  PR - INDIVIDUAL RECODE  
 *** (Boys 15-19 years in the household)
 ********************************************************************************
-	/*Note: In the case of Cambodia 2005, anthropometric data was not 
+	/*Note: In the case of Cambodia 2000, anthropometric data was not 
 	collected for men. Hence the commands under this section have been 
 	removed */
 
@@ -660,59 +634,53 @@ sort hh_id ind_id
  
 *** Merging BR Recode 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM05_BR.dta"  // nrow*ncol: 10791*3
+merge 1:1 ind_id using "$path_out/KHM00_BR.dta"  // nrow*ncol: 9930*3
 // rows: one obs. per woman; cols: 2 variables + ind_id
-// merge: 2 variables added as 2 columns at the end of KHPR42FL.dta; values populated in rows where ind_id (in KHPR42FL.dta & KHM05_BR.dta) match; values denoted as missing in rows where ind_id in KHPR42FL.dta but not in KHM05_BR.dta
+// merge: 2 variables added as 2 columns at the end of KHPR42FL.dta （in addition to hh_id and ind_id added in Step 1.7); values populated in rows where ind_id (in KHPR42FL.dta & KHM00_BR.dta) match; values denoted as missing in rows where ind_id in KHPR42FL.dta but not in KHM00_BR.dta
 drop _merge
 // erase "$path_out/KHM14_BR.dta"
 
 
 *** Merging IR Recode 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM05_IR.dta"  // 16823 rows
-tab women_IR hv117, miss col  // women_IR vs eligibility for female interview: women_IR is 1 for all obs. in KHM05_IR.dta, which should be the women interviewed (433 eligible but not interviewed, see below for reasons)
-tab ha65 if hv117==1 & women_IR ==., miss 
-	//Total number of eligible women not interviewed
+merge 1:1 ind_id using "$path_out/KHM00_IR.dta"  // 15351 rows
+tab women_IR hv117, miss col  // women_IR vs eligibility for female interview: women_IR is 1 for all obs. in KHM00_IR.dta, which should be the women interviewed (206 eligible but not interviewed for unknown reasons)
 drop _merge
 // erase "$path_out/KHM14_IR.dta"
 
 
 /*Check if the number of women in BR recode matches the number of those
 who provided birth history information in IR recode. */
-count if women_BR==1  // 10,791
-count if v201!=0 & v201!=. & women_IR==1  // 10,791
+count if women_BR==1  // 9,930
+count if v201!=0 & v201!=. & women_IR==1  // 9,930
 // v201: Total children ever born
 
 
 /*Check if the number of women in BR and IR recode who provided birth history 
 information matches with the number of eligible women identified by hv117. */
-count if hv117==1  // hv117: Eligibility for female interview, 17,256
-count if women_BR==1 | v201==0  // 16,823 women in BR or has 0 child
-count if (women_BR==1 | v201==0) & hv117==1  // 16,823
-tab v201 if hv117==1, miss  // 433 （=17256-16823） eligible, but missing birth history (total children ever born)
-tab v201 ha65 if hv117==1, miss
-	/*Note: Some 2.57% eligible women did not provide information on their birth 
-	history. This will result in missing value for the child mortality 
-	indicator that we will construct later */
+count if hv117==1  // hv117: Eligibility for female interview, 15,557
+count if women_BR==1 | v201==0  // 15,351 women in BR or has 0 child
+count if (women_BR==1 | v201==0) & hv117==1  // 15,351
+tab v201 if hv117==1, miss  // 206 （=15,557-15,351） eligible, but missing birth history (total children ever born)
 
 	
 *** Merging 15-19 years: girls 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM05_PR_girls.dta"  // 2007 observations
-tab girl_PR hv042 if hv105>=15 & hv105<=19 & hv104==2, miss col  // girl_PR=1 corresponds to household selected for hemoglobin
+merge 1:1 ind_id using "$path_out/KHM00_PR_girls.dta"  // 1727 observations
+tab girl_PR ha13 if hv105>=15 & hv105<=19 & hv104==2, miss col  // girl_PR=1 corresponds ha13 (Women's result of measurement) not missing
 drop _merge
 // erase "$path_out/KHM14_PR_girls.dta"	
 	
 	
 *** Merging MR Recode 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM05_MR.dta"  // 6731 observations
-tab men_MR hv118 if hv027==1, miss col  // men_MR=1 corresponds to eligibility for male interview; 498 eligible male have men_MR missing:
-tab hb65 if hv118==1 & men_MR ==. 
-	//Total of eligible men not interviewed
-drop _merge
-// erase "$path_out/KHM14_MR.dta"	
-
+	//Data was not collected for men
+gen mv003 = .
+gen mv005 = .
+gen mv012 = .
+gen mv201 = .
+gen mv206 = .
+gen mv207 = .
 
 *** Merging 15-19 years: boys 
 *****************************************
@@ -730,26 +698,26 @@ lab var low_bmiage_b_u "Teenage very low bmi 3sd - WHO (boys)"
 
 *** Merging child under 5 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM05_PR_child.dta"  // 4215 observations
+merge 1:1 ind_id using "$path_out/KHM00_PR_child.dta"  // 4031 observations
 tab hv120, miss  // # of matched obs. same as # of children eligible for height/weight and hemoglobin
-tab hc13 if hv120==1, miss  // among the eligible children, 95.66% measured
+tab hc13 if hv120==1, miss  // among the eligible children, 96.08% measured
 drop _merge
 // erase "$path_out/KHM14_PR_child.dta"
 
 
 sort ind_id
 
-save "$path_out/KHM05_merged.dta", replace
+save "$path_out/KHM00_merged.dta", replace
 
 ********************************************************************************
 *** Step 1.9 KEEPING ONLY DE JURE HOUSEHOLD MEMBERS ***
 ********************************************************************************
 
-use "$path_out/KHM05_merged.dta", clear
+use "$path_out/KHM00_merged.dta", clear
 
 //Permanent (de jure) household members 
 clonevar resident = hv102  // usual resident
-codebook resident, tab (10)  // 668 no, all others yes
+codebook resident, tab (10)  // 163 no, 17 missing, all others yes
 label var resident "Permanent (de jure) household member"
 
 drop if resident!=1 
@@ -757,8 +725,8 @@ tab resident, miss
 	/*Note: The Global MPI is based on de jure (permanent) household members 
 	only. As such, non-usual residents will be excluded from the sample. 
 	
-	In the context of Cambodia DHS 2005, 668 (0.91%) individuals who were 
-	non-usual residents were dropped from the sample. */
+	In the context of Cambodia DHS 2000, 180/66285 individuals who were 
+	non-usual residents or were missing information were dropped from the sample. */
 
 
 ********************************************************************************
@@ -766,14 +734,11 @@ tab resident, miss
 ********************************************************************************
 
 /*
-Cambodia DHS 2005 included an anthropometric component in which children under 
-age 5 in a subsample of 1/2 of the households were measured for height 
-and weight. The height and weight of women age 15-49 were also measured among 
-the 1/2 subsample of households */
+In Cambodia DHS 2000, a subsample of 50 percent of households was selected for data collection of anthropometry. No information found regarding which ones were selected.*/
 
-clonevar subsample = hv042  // hv042: Household selected for hemoglobin
+gen subsample = .
 label var subsample "Households selected as part of nutrition subsample" 
-drop if subsample!=1  // drop 1/2 not selected, 35,665 left
+// drop if subsample!=1 
 tab subsample, miss	
 	
 	
@@ -794,24 +759,24 @@ relevant indicators.*/
 tab ha13 if hv105>=15 & hv105<=49 & hv104==2, miss
 // ha13: Result of measurement - height/weight
 // measured, not measured ...
-/* out of the 9096 women 15-49, 
-8539 measured
-333 not measured
-72 refused/other
-32 other
-120 9
+/* out of the 15935 women 15-49, 
+7572 measured
+127 not present
+14 refused
+5 other
+8217 .
 */
 tab ha13, miss  
-// same counts as above, except there are 26569 more missing, making a total of 35665.
+// same counts as above, except there are 50170 more missing, making a total of 66105.
 // meaning, all people who are not woman 15-49 have ha13 missing
-gen fem_nutri_eligible = (ha13!=.)  //  26,569 missing (not eligible)
-tab fem_nutri_eligible, miss  // about 3/4 ppl. not eligible
+gen fem_nutri_eligible = (ha13!=.)  //   58,387 (=8217+50170) missing (not eligible) assuming no woman eligible has ha13 missing
+tab fem_nutri_eligible, miss  // about 90% ppl. not eligible
 bysort hh_id: egen hh_n_fem_nutri_eligible = sum(fem_nutri_eligible) 	
 gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss  // about 6.38% people are in households with no eligible women for anthromopetric
+tab no_fem_nutri_eligible, miss  // about half people are in households with no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
@@ -1033,7 +998,7 @@ label define lab_reg ///
 19 "Mondul Kiri and Ratanak Kiri"
 label values region lab_reg
  
-save "$path_out/KHM05_merged_procd.dta", replace  // proccessed
+save "$path_out/KHM00_merged_procd.dta", replace  // proccessed
 
 ********************************************************************************
 ***  Step 2 Data preparation  ***
@@ -1041,7 +1006,7 @@ save "$path_out/KHM05_merged_procd.dta", replace  // proccessed
 ***  Identification of non-deprived & deprived individuals  
 ********************************************************************************
 
-use "$path_out/KHM05_merged_procd.dta", clear 
+use "$path_out/KHM00_merged_procd.dta", clear 
 
 ********************************************************************************
 *** Step 2.1 Years of Schooling ***
