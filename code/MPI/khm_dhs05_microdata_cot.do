@@ -115,7 +115,7 @@ tab hc2 if hc2>9990, miss nol
 	//Missing value is 9999
 replace weight = . if hc2>=9990 
 	//All missing values or out of range are replaced as "."
-sum weight
+sum weight  // ranges from 1.9 to 99.3 kg
 tab	hc13 hc2 if hc2>=9990 | hc2==., miss 
 	//hc13: result of the measurement 
 
@@ -129,7 +129,7 @@ tab hc3 if hc3>9990, miss nol
 replace height = . if hc3>=9990 
 	//All missing values or out of range are replaced as "."
 tab	hc13 hc3   if hc3>=9990 | hc3==., miss 
-sum height
+sum height  // ranges from 30 to 188.3 cm
 
 
 *** Variable: MEASURED STANDING/LYING DOWN ***	
@@ -280,7 +280,7 @@ use "$path_in/KHBR51DT/KHBR51FL.dta", clear
 gen double ind_id = v001*1000000 + v002*100 + v003 
 format ind_id %20.0g
 label var ind_id "Individual ID"
-
+codebook ind_id
 
 desc b3 b7  // b3: date of birth (cmc) - none missing; b7: age at death (months, imputed) -  34,960 /40,457 missing? not dead?
 gen date_death = b3 + b7
@@ -662,7 +662,7 @@ sort hh_id ind_id
 *****************************************
 merge 1:1 ind_id using "$path_out/KHM05_BR.dta"  // nrow*ncol: 10791*3
 // rows: one obs. per woman; cols: 2 variables + ind_id
-// merge: 2 variables added as 2 columns at the end of KHPR51FL.dta; values populated in rows where ind_id (in KHPR51FL.dta & KHM05_BR.dta) match; values denoted as missing in rows where ind_id in KHPR51FL.dta but not in KHM05_BR.dta
+// merge: 2 variables added as 2 columns at the end of KHPR51FL.dta （in addition to hh_id and ind_id added in Step 1.7); values populated in rows where ind_id (in KHPR51FL.dta & KHM05_BR.dta) match; values denoted as missing in rows where ind_id in KHPR51FL.dta but not in KHM05_BR.dta
 drop _merge
 // erase "$path_out/KHM14_BR.dta"
 
