@@ -419,13 +419,24 @@ codebook ind_id
 
 
 *** Identify anthropometric sample for girls
+tab ha13 hv027 if hv105>=15 & hv105<=19 & hv104==2, miss
+tab ha13 shanthro if hv105>=15 & hv105<=19 & hv104==2, miss
+/*ha13: Result of measurement - height/weight
+hv027: Selection for male/husb. int. -- all missing in 2000
+shanthro: collection of antropometry data
+hv105: age of hh member
+hv104: sex of hh member
+*/
+	/*Total number of girls 15-19 years who live in household selected for 
+	anthropometry data collection and have anthropometric data: 1,674 */  // have anthropometric data meaning "result of measurement..." = "measured"
+
 tab ha13 hv117 if hv105>=15 & hv105<=19 & hv104==2, miss	
 tab ha13 hv103 if hv105>=15 & hv105<=19 & hv104==2, miss
 /*ha13: Result of measurement - height/weight
 hv117: Eligibility for female interview
 hv103: Slept last night
 */
-// The above two lines give the same results.
+// The above two lines give the same results:
 	/*25 of the 1,674 women 15-19 years are identified as non-eligible
 	for the female interview as they did not sleep the night before in the 
 	household. Hence they will not have data on child mortality but they have 
@@ -433,11 +444,11 @@ hv103: Slept last night
 	
 		
 *** Keep relevant sample	
-keep if hv105>=15 & hv105<=19 & hv104==2 & ha13!=.
+keep if hv105>=15 & hv105<=19 & hv104==2 & shanthro==1
 // age 15-19, sex female
-// Note hv042==1 - hh selected for hemoglobin measurements - is used instead of ha13!=. to filter relevant sample in 2005, 2010, and 2014, that is because those households are the ones selected for male interview and also the ones in which female height and weight are measured. In 2000, a random "subsample of 50 percent of households was selected for data collection of anthropometry". Missing values in ha13 - Women's result of measurement - is assumed to indicate the people not selected.
+// Note hv042==1 - hh selected for hemoglobin measurements - is used instead of shanthro==1 to filter relevant sample in 2005, 2010, and 2014, that is because those households are the ones selected for male interview and also the ones in which female height and weight are measured. In 2000, a random "subsample of 50 percent of households was selected for data collection of anthropometry". shanthro indicates these households in which female height and weight are measured. 
 count
-	//Total girls 15-19 years: 1,727
+	//Total girls 15-19 years: 1,809
 
 
 ***Variables required to calculate the z-scores to produce BMI-for-age:
@@ -472,7 +483,7 @@ tab ha13 if ha2>9990, miss
 gen weight = ha2/10 if ha2<9990
 	/*Weight information from girls. We divide it by 10 in order to express 
 	it in kilograms. Missing values or out of range are identified as "." */	
-sum weight  // 0.4, 5.6, 11.5-145.9 - 0.4 and 5.6 weights are considered implausible so their BMI values are set to missing later with "replace z_bmi = ."
+sum weight  // 0.4, 5.6, 11.5-153.7 - 0.4 and 5.6 weights are considered implausible so their BMI values are set to missing later with "replace z_bmi = ."
 
 
 *** Variable: HEIGHT (CENTIMETERS)	
