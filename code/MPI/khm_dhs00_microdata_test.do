@@ -677,8 +677,8 @@ tab v201 if hv117==1, miss  // 206 （=15,557-15,351） eligible, but missing bi
 	
 *** Merging 15-19 years: girls 
 *****************************************
-merge 1:1 ind_id using "$path_out/KHM00_PR_girls.dta"  // 1727 observations
-tab girl_PR ha13 if hv105>=15 & hv105<=19 & hv104==2, miss col  // girl_PR=1 corresponds ha13 (Women's result of measurement) not missing
+merge 1:1 ind_id using "$path_out/KHM00_PR_girls.dta"  // 1809 observations
+tab girl_PR shanthro if hv105>=15 & hv105<=19 & hv104==2, miss col  // girl_PR=1 corresponds shanthro (collection of antropometry data) == 1 (yes)
 drop _merge
 // erase "$path_out/KHM14_PR_girls.dta"	
 	
@@ -747,9 +747,9 @@ tab resident, miss
 /*
 In Cambodia DHS 2000, a subsample of 50 percent of households was selected for data collection of anthropometry. No information found regarding which ones were selected.*/
 
-gen subsample = .
+clonevar subsample = shanthro  // shanthro: collection of antropometry data
 label var subsample "Households selected as part of nutrition subsample" 
-// drop if subsample!=1 
+drop if subsample!=1  //  drop 1/2 not selected, 32,511 left
 tab subsample, miss	
 	
 	
