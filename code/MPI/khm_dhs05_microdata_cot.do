@@ -830,7 +830,7 @@ tab no_fem_eligible, miss
 *** No eligible men 
 *** for adult nutrition indicator (if relevant)
 ***********************************************
-	//Note: There is no male anthropometric data for Cambodia DHS 2014
+	//Note: There is no male anthropometric data for Cambodia DHS 2005
 gen	male_nutri_eligible = .	
 gen	no_male_nutri_eligible = .
 lab var no_male_nutri_eligible "Household has no eligible men for anthropometric"	

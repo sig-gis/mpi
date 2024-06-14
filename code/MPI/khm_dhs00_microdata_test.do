@@ -745,7 +745,7 @@ tab resident, miss
 ********************************************************************************
 
 /*
-In Cambodia DHS 2000, a subsample of 50 percent of households was selected for data collection of anthropometry. No information found regarding which ones were selected.*/
+In Cambodia DHS 2000, a subsample of 50 percent of households was selected for data collection of anthropometry.*/
 
 clonevar subsample = shanthro  // shanthro: collection of antropometry data
 label var subsample "Households selected as part of nutrition subsample" 
@@ -775,19 +775,19 @@ tab ha13 if hv105>=15 & hv105<=49 & hv104==2, miss
 127 not present
 14 refused
 5 other
-8217 .
+176 .
 */
 tab ha13, miss  
-// same counts as above, except there are 50170 more missing, making a total of 66105.
+// same counts as above, except there are a lot more missing, making a total of 32511.
 // meaning, all people who are not woman 15-49 have ha13 missing
-gen fem_nutri_eligible = (ha13!=.)  //   58,387 (=8217+50170) missing (not eligible) assuming no woman eligible has ha13 missing
-tab fem_nutri_eligible, miss  // about 90% ppl. not eligible
+gen fem_nutri_eligible = (ha13!=.)  //  24,793 missing (not eligible)
+tab fem_nutri_eligible, miss  // about 3/4 ppl. not eligible
 bysort hh_id: egen hh_n_fem_nutri_eligible = sum(fem_nutri_eligible) 	
 gen	no_fem_nutri_eligible = (hh_n_fem_nutri_eligible==0)
 	//Takes value 1 if the household had no eligible women for anthropometrics
 lab var no_fem_nutri_eligible "Household has no eligible women for anthropometric"	
 drop hh_n_fem_nutri_eligible
-tab no_fem_nutri_eligible, miss  // about half people are in households with no eligible women for anthromopetric
+tab no_fem_nutri_eligible, miss  // about 3.94% people are in households with no eligible women for anthromopetric
 
 
 *** No eligible women 15-49 years 
@@ -801,12 +801,12 @@ gen	no_fem_eligible = (hh_n_fem_eligible==0)
 lab var no_fem_eligible "Household has no eligible women for interview"
 drop fem_eligible hh_n_fem_eligible 
 tab no_fem_eligible, miss
-// about 9.6% people are in households with no eligible women for interview, more than households with no eligible women for anthropometric because some women who were eligible for height and weight measurements, but were not eligible for interview, but all of the people who were eligible for female interview were eligible for measurements
+// about 4.23% people are in households with no eligible women for interview, more than households with no eligible women for anthropometric because some women who were eligible for height and weight measurements, but were not eligible for interview, but all of the people who were eligible for female interview were eligible for measurements
 
 *** No eligible men 
 *** for adult nutrition indicator (if relevant)
 ***********************************************
-	//Note: There is no male anthropometric data for Cambodia DHS 2014
+	//Note: There is no male anthropometric data for Cambodia DHS 2000
 gen	male_nutri_eligible = .	
 gen	no_male_nutri_eligible = .
 lab var no_male_nutri_eligible "Household has no eligible men for anthropometric"	
@@ -815,23 +815,16 @@ lab var no_male_nutri_eligible "Household has no eligible men for anthropometric
 *** No eligible men 
 *** for child mortality indicator (if relevant)
 *****************************************
-// no_male_eligible all set to missing in 2014, but "male_eligible" is only found in the following lines, so the inconsistency is ok
-gen	male_eligible = (hv118==1)
-// hv118: eligibility for male interview
-bysort	hh_id: egen hh_n_male_eligible = sum(male_eligible)  
-	//Number of eligible men for interview in the hh
-gen	no_male_eligible = (hh_n_male_eligible==0) 	
-	//Takes value 1 if the household had no eligible men for an interview
+// no_male_eligible all set to missing in 2000 because there is no male data, but "male_eligible" is only found in the following lines, so the missingness has no significant impact
+gen	no_male_eligible = .
 lab var no_male_eligible "Household has no eligible man for interview"
-drop hh_n_male_eligible
-tab no_male_eligible, miss  // ~80% (of people in the 1/2 subsampled households) are in households that have a man eligible for interview
 
 
 
 *** No eligible children under 5
 *** for child nutrition indicator
 *****************************************
-gen	child_eligible = (hv120==1)  // Children eligibility for height/weight and hemo
+gen	child_eligible = (hv120==1)  // Children eligibility for height/weight and hemoglobin
 bysort	hh_id: egen hh_n_children_eligible = sum(child_eligible)  
 	//Number of eligible children for anthropometrics
 gen	no_child_eligible = (hh_n_children_eligible==0) 
@@ -844,7 +837,7 @@ tab no_child_eligible, miss  // 1:0 about half:half
 *** No eligible women and men 
 *** for adult nutrition indicator
 ***********************************************
-		/*There is no male anthropometric data for Cambodia DHS 2005. So 
+		/*There is no male anthropometric data for Cambodia DHS 2000. So 
 		this variable is only made up of eligible adult women */
 gen	no_adults_eligible = (no_fem_nutri_eligible==1) 
 lab var no_adults_eligible "Household has no eligible women or men for anthropometrics"
@@ -857,15 +850,15 @@ tab no_adults_eligible, miss
 gen	no_child_fem_eligible = (no_child_eligible==1 & no_fem_nutri_eligible==1)
 lab var no_child_fem_eligible "Household has no children or women eligible for anthropometric"
 tab no_child_fem_eligible, miss 
-// 5.68% no_child_fem_eligible
-// about 6.38% people are in households with no eligible women for anthromopetric (no_fem_nutri_eligible)
-// among them, 0.7% have eligible child
+// 3.36% no_child_fem_eligible
+// about 3.94% people are in households with no eligible women for anthromopetric (no_fem_nutri_eligible)
+// among them, 0.58% / 189 have eligible child
 
 
 *** No Eligible Women, Men or Children 
 *** for nutrition indicator 
 ***********************************************
-		/*There is no male anthropometric data for Cambodia DHS 2005. So 
+		/*There is no male anthropometric data for Cambodia DHS 2000. So 
 		this variable is only made up of eligible adult women and 
 		children */
 gen no_eligibles = (no_fem_nutri_eligible==1 & no_child_eligible==1)
@@ -883,9 +876,9 @@ sort hh_id ind_id
 //Sample weight
 desc hv005
 clonevar weight = hv005
-replace weight = weight/1000000 
+replace weight = weight/1000000
 label var weight "Sample weight"
-
+codebook weight  // 0.09-0.93-3.21
 
 //Area: urban or rural	
 desc hv025  // 1 urban, 2 rural
@@ -898,7 +891,7 @@ label var area "Area: urban-rural"
 
 
 //Relationship to the head of household 
-clonevar relationship = hv101  // 1-14, 99: Missing 
+clonevar relationship = hv101  // 3 missing
 // the variable is not used in MPI, so the following lines are not inspected 
 /*
 codebook relationship, tab (20)
@@ -939,7 +932,7 @@ tab headship, miss
 
 //Age of household member
 codebook hv105, tab (999)
-clonevar age = hv105  // 0-96, 97+
+clonevar age = hv105  // 0-96 without 92, 97+
 replace age = . if age>=98  // 0 real changes made
 label var age "Age of household member"
 
@@ -957,7 +950,7 @@ recode age (0/17 = 1 "0-17") (18/max = 2 "18+"), gen(agec2)
 lab var agec2 "age groups (2 groups)"
 
 
-//Marital status of household member  // not used elsewhere
+//Marital status of household member  // all missing, but ok since it is not used elsewhere
 clonevar marital = hv115 
 codebook marital, tab (10)
 recode marital (0=1)(1=2)(3=3)(4=4)(9=.)
@@ -972,41 +965,43 @@ tab hv115 marital, miss
 gen member = 1
 bysort hh_id: egen hhsize = sum(member)
 label var hhsize "Household size"
-tab hhsize, miss  // 1-19
+tab hhsize, miss  // 1-16
 drop member
 
 
 
 //Subnational region
-	/*NOTE: The sample for the Cambodia DHS 2014-15 was designed to provide 
-	estimates of key indicators for the country as a whole, for urban and rural 
-	areas separately, and for each of the 19 sampling domains (p.4). 
-	14 of the 19 sampling domains correspond to individual provinces and 5 
-	correspond to grouped provinces (p.4).*/   
-lookfor region
+	/*NOTE: Survey estimates are produced for 12 individual provinces and for 5 groups of
+provinces [different from the groups defined in the following surveys].*/   
+lookfor region province
 codebook hv024, tab (99)	
 clonevar region = hv024
 lab var region "Region for subnational decomposition"
 label define lab_reg ///
 1 "Banteay Meanchay" ///
-2 "Kampong Cham" ///
-3 "Kampong Chhnang" ///
-4 "Kampong Speu" ///
-5 "Kampong Thom" ///
-6 "Kandal" ///
-7 "Kratie" ///
-8 "Phnom Penh" ///
-9 "Prey Veng" ///
-10 "Pursat" ///
-11 "Siem Reap" ///
-12 "Svay Rieng" ///
-13 "Takeo" ///
-14 "Otdar Meanchey" ///
-15 "Battambang & Pailin" ///
-16 "Kampot & Kep" ///
-17 "Preah Sihanouk and Koh Kong" ///
-18 "Preah Vihear and Stung Treng" ///
-19 "Mondul Kiri and Ratanak Kiri"
+2 "Battambang" ///
+3 "Kampong Cham" ///
+4 "Kampong Chhnang" ///
+5 "Kampong Speu" ///
+6 "Kampong Thom" ///
+7 "Kampot" ///
+8 "Kandal" ///
+9 "Koh Kong" ///
+10 "Kratie" ///
+11 "Mondul Kiri" ///
+12 "Phnom Penh" ///
+13 "Preah Vihear" ///
+14 "Prey Veng" ///
+15 "Pursat" ///
+16 "Ratanak Kiri"  ///
+17 "Siem Reap" ///
+18 "Preah Sihanouk" ///
+19 "Stung Treng" ///
+20 "Svay Rieng" ///
+21 "Takeo" ///
+22 "Otdar Meanchey" ///
+23 "Kep" ///
+24 "Pailin"
 label values region lab_reg
  
 save "$path_out/KHM00_merged_procd.dta", replace  // proccessed
