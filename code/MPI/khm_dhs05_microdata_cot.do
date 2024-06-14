@@ -1503,7 +1503,7 @@ replace hh_no_uw_st = . if hh_no_stunting==. & hh_no_underweight==.
 replace hh_no_uw_st = 1 if no_child_eligible==1
 	//Households with no eligible children will receive a value of 1 
 lab var hh_no_uw_st "Household has no child underweight or stunted"
-
+tab hh_no_uw_st, miss
 
 /**
 Destitution MPI is not used, so the following lines are not inspected 

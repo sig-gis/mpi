@@ -1018,12 +1018,12 @@ use "$path_out/KHM00_merged_procd.dta", clear
 *** Step 2.1 Years of Schooling ***
 ********************************************************************************
 
-codebook hv108, tab(30)  // 1-25 in DHS 6, but 1-20 in DHS 5
+codebook hv108, tab(30)  // 1-25 in DHS 6, but 1-20 in DHS 5, and 0-16 in DHS 4
 clonevar  eduyears = hv108   
 	//Total number of years of education
 replace eduyears = . if eduyears>30
 	//Recode any unreasonable years of highest education as missing value
-	// only 98 (don't know) and 99 in this dataset
+	// none in this dataset
 replace eduyears = . if eduyears>=age & age>0
 	/*The variable "eduyears" was replaced with a '.' if total years of 
 	education was more than individual's age */
@@ -1049,7 +1049,7 @@ replace no_missing_edu = no_missing_edu/hhs
 replace no_missing_edu = (no_missing_edu>=2/3)
 	/*Identify whether there is information on years of education for at 
 	least 2/3 of the household members aged 10 years and older */
-tab no_missing_edu, miss  // 99.79% people have at least 2/3 household members aged 10 years and older having information on years of education 
+tab no_missing_edu, miss  // 99.86% people have at least 2/3 household members aged 10 years and older having information on years of education 
 label var no_missing_edu "No missing edu for at least 2/3 of the HH members aged 10 years & older"		
 drop temp temp2 hhs
 
@@ -1062,15 +1062,15 @@ gen	 years_edu6 = (eduyears>=6)
 	/* The years of schooling indicator takes a value of "1" if at least someone 
 	in the hh has reported 6 years of education or more */
 replace years_edu6 = . if eduyears==.
-bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone with 6 years of education or more (21,244 1's)
-//3 missing values generated: row 12036, 34443, 34444 - all HH members have missing years_edu6
+bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone with 6 years of education or more (15,631 1's)
+//10 missing values generated: HH members have missing years_edu6
 // note: max(0, .) = 0
 gen	hh_years_edu6 = (hh_years_edu6_1==1)
-replace hh_years_edu6 = . if hh_years_edu6_1==.  // the 3 missing values, 21,244 1's
+replace hh_years_edu6 = . if hh_years_edu6_1==.  // the 10 missing values
 replace hh_years_edu6 = . if hh_years_edu6==0 & no_missing_edu==0  // set to missing if there's no one in the household with 6 years of education or more & missing edu for at least 2/3 of the HH members aged 10 years & older
 lab var hh_years_edu6 "Household has at least one member with 6 years of edu"
-// 3 missing because all members have missing information on years of education
-// additional 55 missing because there's no one in the household with 6 years of education or more & missing edu for at least 2/3 of the HH members aged 10 years & older
+// 10 missing because all members have missing information on years of education
+// additional 25 missing because there's no one in the household with 6 years of education or more & missing edu for at least 2/3 of the HH members aged 10 years & older
 
 /**
 Destitution MPI is not used, so the following lines are not inspected 
@@ -1099,7 +1099,8 @@ codebook attendance, tab (10)
 label define lab_attend 1 "currently attending" 0 "not currently attending"
 label values attendance lab_attend
 label var attendance "Attended school during current school year"
-// 67 missing; 9272 attending; 26326 not attending
+codebook attendance
+// 93 missing; 7554 attending; 24864 not attending
 		
 *** Standard MPI ***
 /*The entire household is considered deprived if any school-aged 
@@ -1120,12 +1121,12 @@ gen temp = 1 if child_schoolage==1 & attendance!=.  // else temp = 0 (not at sch
 	children who are attending school */
 bysort hh_id: egen no_missing_atten = sum(temp)	
 	/*(per household) Total school age children with no missing information on school 
-	attendance */ // 0-9
+	attendance */ // 0-7
 
 gen temp2 = 1 if child_schoolage==1	
-bysort hh_id: egen hhs = sum(temp2)  // 0-9
+bysort hh_id: egen hhs = sum(temp2)  // 0-7
 	//Total number of household members who are of school age
-replace no_missing_atten = no_missing_atten/hhs  // 9034 missing because hhs (Total number of household members who are of school age) is 0
+replace no_missing_atten = no_missing_atten/hhs  // 5839 missing because hhs (Total number of household members who are of school age) is 0
 replace no_missing_atten = (no_missing_atten>=2/3)  // 0 if <2/3; 1 if >=2/3 or missing (because total number of household members who are of school age is 0)
 	/*Identify whether there is missing information on school attendance for 
 	more than 2/3 of the school age children */			
@@ -1228,20 +1229,20 @@ tab hh_child_atten_u, miss
 ********************************************************************************
 *** Step 2.3a Adult Nutrition ***
 ********************************************************************************
-	//Cambodia DHS 2005 has no anthropometric data for adult men 
+	//Cambodia DHS 2000 has no anthropometric data for adult men 
 
-// ha40 BMI, range is 1200:6000 in DHS 6, but no range specified in DHS 5
+// ha40 BMI
 foreach var in ha40 {
 			 gen inf_`var' = 1 if `var'!=.
 			 bysort sex: tab age inf_`var'  // # of BMI obs. by sex & age
-			 //BMI data covers women 15-49 years. 9096 nonmissing observations
+			 //BMI data covers women 15-49 years. 7572 nonmissing observations
 			 drop inf_`var'
 			 }
 ***
 
 *** BMI Indicator for Women 15-49 years ***
 ******************************************************************* 
-gen	f_bmi = ha40/100  // 12.13-40.85, 99.98, 99.99
+gen	f_bmi = ha40/100  // 12.09-59.25, 99.98
 lab var f_bmi "Women's BMI"
 gen	f_low_bmi = (f_bmi<18.5)
 replace f_low_bmi = . if f_bmi==. | f_bmi>=99.97
@@ -1255,7 +1256,7 @@ lab var f_low_bmi_u "BMI of women <17"
 
 *** BMI Indicator for Men 15-59 years ***
 ******************************************************************* 
-	//Note: Cambodia DHS 2005 has no anthropometric data for men. 
+	//Note: Cambodia DHS 2000 has no anthropometric data for men. 
 	
 gen m_bmi = .
 lab var m_bmi "Male's BMI"
@@ -1285,11 +1286,11 @@ the age group of 15-19 by their age in months where information is available */
 	//Replacement for girls: 
 replace low_bmi_byage = 1 if low_bmiage==1 & age_month!=.  
 // low_bmiage ("Teenage low bmi 2sd - WHO") calculated by who2007 in Step 1.4
-// age_month!=. if hv105>=15 & hv105<=19 & hv104==2 & hv042==1 (values range from 180 to 228 to 308)
+// age_month!=. if hv105>=15 & hv105<=19 & hv104==2 & shanthro==1 (values range from 175 to 352)
 // 0 changes made because all low BMIs have been captured by f_low_bmi already
 
 replace low_bmi_byage = 0 if low_bmiage==0 & age_month!=.
-// 374 changed from 1 to 0: f_bmi is <18.5, but not considered low for teenagers (not below 2sd)
+// 314 changed from 1 to 0: f_bmi is <18.5, but not considered low for teenagers (not below 2sd)
 
 	/*Replacements for boys - if there is no male anthropometric data for boys, 
 	then 0 changes are made: */
@@ -1382,11 +1383,11 @@ tab hh_no_low_bmiage_u, miss
 *** Standard MPI ***
 bysort hh_id: egen temp = max(underweight)  // "Child is undernourished (weight-for-age) 2sd - WHO"
 gen	hh_no_underweight = (temp==0) 
-	//Takes value 1 if no child in the hh is underweight: 11071 are 1's; all the rest are 0's
+	//Takes value 1 if no child in the hh is underweight: 8834 are 1's; all the rest are 0's
 replace hh_no_underweight = . if temp==.
-	// all household members have missing information on underweight: 18064 0's changed to missing
+	// all household members have missing information on underweight: 15130 0's changed to missing
 replace hh_no_underweight = 1 if no_child_eligible==1 
-	//Households with no eligible children will receive a value of 1: 17,480 missing to 1's
+	//Households with no eligible children will receive a value of 1: 14536 missing to 1's
 lab var hh_no_underweight "Household has no child underweight - 2 stdev"
 drop temp
 
@@ -1474,7 +1475,7 @@ replace hh_no_uw_st = . if hh_no_stunting==. & hh_no_underweight==.
 replace hh_no_uw_st = 1 if no_child_eligible==1
 	//Households with no eligible children will receive a value of 1 
 lab var hh_no_uw_st "Household has no child underweight or stunted"
-
+tab hh_no_uw_st, miss
 
 /**
 Destitution MPI is not used, so the following lines are not inspected 
@@ -1506,11 +1507,11 @@ in their respective nutrition variable. */
 
 gen	hh_nutrition_uw_st = 1
 replace hh_nutrition_uw_st = 0 if hh_no_low_bmiage==0 | hh_no_uw_st==0
-// deprived if either 15-49 year-olds or children are deprived: 14,363 observations
+// deprived if either 15-49 year-olds or children are deprived: 15,361 observations
 replace hh_nutrition_uw_st = . if hh_no_low_bmiage==. & hh_no_uw_st==.
 	/*Replace indicator as missing if household has eligible adult and child 
 	with missing nutrition information */
-	// 1. if household has eligible adult and child, but missing one of adult / child, then the nonmissing one determines the indicator for the whole household: 187 observations
+	// 1. if household has eligible adult and child, but missing one of adult / child, then the nonmissing one determines the indicator for the whole household: 79 observations
 	
 // 2. if one of adult / child not eligible:
 // the eligible one determines the indicator for the whole household
@@ -1569,7 +1570,7 @@ tab hh_nutrition_uw_st_u, miss
 *** Step 2.4 Child Mortality ***
 ********************************************************************************
 
-codebook v206 v207 mv206 mv207  // mv206 mv207 are empty in 2014, but are available here and in 2010
+codebook v206 v207 mv206 mv207  // mv206 mv207 are empty here and in 2014, but are available in 2005 and 2010
 	//v206 or mv206: number of sons who have died 
 	//v207 or mv207: number of daughters who have died
 	
@@ -1590,7 +1591,7 @@ lab var child_mortality_m "Occurrence of child mortality reported by men"
 tab child_mortality_m, miss
 drop temp_m
 
-// Harmonization: Exclude child mortality reported by men. Replace the following chunk of code with the one below it. Child mortality reported by men is available in 2005 and 2010, but not in 2014. To harmonize the child mortality indicator across the three years, child mortality reported by men is excluded from 2005 and 2010 indicators.
+// Harmonization: Exclude child mortality reported by men. Replace the following chunk of code with the one below it. Child mortality reported by men is available in 2005 and 2010, but not in 2000 and 2014. To harmonize the child mortality indicator across the three years, child mortality reported by men is excluded from 2005 and 2010 indicators.
 
 /*
 egen child_mortality = rowmax(child_mortality_f child_mortality_m)
@@ -1636,7 +1637,7 @@ replace childu18_died_per_wom_5y = 0 if v201==0
 	country dataset, child mortality information was only collected from 
 	ever-married women (check report), please activate this command line.*/	
 	// according to 2014 report (p.127) Each woman age 15-49 was asked whether she had ever given birth, and, if she had, she was asked to report the number of sons and daughters who live with her, the number who live elsewhere, and the number who have died.
-	// same in 2005 report (p.121)
+	// same in 2000 report (p.119)
 replace childu18_died_per_wom_5y = 0 if no_fem_eligible==1 
 	/*Assign a value of "0" for:
 	- individuals living in households that have non-eligible women */	
@@ -1701,7 +1702,7 @@ Note: In cases of mismatch between the country report and the internationally
 agreed guideline, we followed the report.
 */
 
-clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 5; na in DHS 5, but not DHS 6)
+clonevar toilet = hv205  // Type of toilet facility (categories 11-19 & 21-29 & 31 not elaborated in recode manual of DHS 4 or 5; na in DHS 5, but not DHS 6)
 codebook toilet, tab(100) 
 /*recode manual of DHS 6:
 (10 FLUSH TOILET: not found in 2014 data, FLUSH TOILET categorized into 11-15
@@ -1721,7 +1722,8 @@ codebook toilet, tab(100)
  43 Hanging toilet/latrine
  96 Other: not found in 2014 ata
  (m) 99 Missing: not found in 2014 data */
-// In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: toilet over water, 61: no toilet/field/forest, 96: other. Same as 2014 & 2010 questionnaire, except in 2014 & 2010 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field
+// In 2005 questionnaire, 10-23 the same as above, 31: composting toilet, 41: bucket toilet, 51: toilet over water, 61: no toilet/field/forest, 96: other. Same as 2014 & 2010 questionnaire, except in 2014 & 2010 questionnaire, 51: hanging toilet/hanging latrine, 61: no facility/bush/field. 
+// In 2000 questionnaire, the categories are significantly different. For flush toilet, pour flush toilet is not asked about. Flush to sewer is not specified as piped or not. Flush to sewer and flush with septic tank are grouped in one category. Flush to elsewhere other than sewer and septic tank is only one category. For pit latrine, it is categorized based on whether it is connected to sewer or with septic tank, instead of whether it is ventilated and/or has a slab. Composting toilet, bucket toilet, or any other toilet is not asked about.
 // 2005 report does tabulate categories as defined by unstats.un.org
 /* In 2005 dataset, the line of code above (codebook toilet) shows that 
 - numeric codes 11-23 are labeled the same as 2010 & 2014
@@ -1803,13 +1805,12 @@ agreed guideline, we followed the report.
 */
 
 
-	/* Note: Cambodia DHS 2005 has no observation for hv201 (source of drinking 
-	water). This is because, data on drinking water is collected for the dry and 
-	wet season. The hv201d variable captures the source of drinking water during 
-	the dry season and the hv201w variable captures the  source of drinking 
-	water during wet season. Similarly, there is no observation for hv204 
-	(time it takes to get the water). However, data on time to water is 
-	available for the dry season (hv204d) and wet season (hv204w). Some 
+	/* Note: Cambodia DHS 2000 has no observation for source of drinking 
+	water. This is because, data on drinking water is collected for the dry and 
+	wet season. The hv201 variable captures the source of drinking water during 
+	the dry season and the sh22b variable captures the  source of drinking 
+	water during wet season. Similarly, there is no observation for time it takes to get the water. However, data on time to water is 
+	available for the dry season (hv204) and wet season (sh22c). Some 
 	of the households use different source of water between the dry and wet 
 	season. As such we construct the drinking water variable using both 
 	information. Household is identified as deprived if they had used 
@@ -1853,16 +1854,16 @@ SURFACE WATER (RIVER/...) is coded as 61
 TANKER TRUCK is put together with WATER VENDOR as 71
 BOTTLED WATER is coded as 81
 
-In the options for "How long does it take to go there, get water, and come back?", 2005 has an additional option "ON PREMISES" (coded as 996) than 2014.
+In the options for "How long does it take to go there, get water, and come back?", 2000 and 2005 have an additional option "ON PREMISES" (coded as 996) than 2014.
 */
 
-clonevar water = hv201  // same in DHS 5 & 6 except only DHS 5 has na
-clonevar water_dry = hv201d
-clonevar water_wet = hv201w
+gen water = .  // same in DHS 5 & 6 except only DHS 5 has na
+clonevar water_dry = hv201
+clonevar water_wet = sh22b
 
-clonevar timetowater = hv204 
-clonevar timetowater_dry = hv204d  
-clonevar timetowater_wet = hv204w
+gen timetowater = . 
+clonevar timetowater_dry = hv204  // many (9,896) missing 
+clonevar timetowater_wet = sh22c  // many (13,738) missing
 
 codebook water_dry, tab(30)  // same labels as 2010 except that 61==tanker truck for 2010, but tanker truck/water ventor here for 2005
 codebook water_wet, tab(30)  // same comment as water_dry
@@ -1873,8 +1874,9 @@ codebook timetowater*, tab (9999)
 
 /*Some DHS might have the variable non-drinking water. Please try looking for it 
 as it will affect the poverty indicator. */
-clonevar ndwater = hv202  
-	//Cambodia DHS 2005 has observations for non-drinking water, but neither 2010 nor 2014 does, so the variable is not used to create the poverty indicator for consistency.
+gen ndwater = .  
+	//no observation for non-drinking water found for Cambodia DHS 2000. 
+
 	
 
 *** Standard MPI ***
@@ -2107,20 +2109,20 @@ does not own a car or truck. */
 /* Comparing the 2005 & 2014 questionnaires, motorbike question includes moped in 2005 but not in 2014. Motorcycle-cart is asked about in 2014, but not 2005. A question about ownership of an oxcart or horsecart is also asked in 2014. Car/truck question includes tractor in 2014, but not 2005. */
 
 	//Check that for standard assets in living standards: "no"==0 and yes=="1"
-codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c  // hv244
+codebook hv208 hv207 hv221 hv209 hv212 hv210 hv211 sh28f  // hv243a hv244
 // na in DHS 5, but not DHS 6
 
 clonevar television = hv208 
-gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
+gen bw_television = .  // not generated in 2000 script, but the variable is not used, so the inconsistency is ok
 clonevar radio = hv207 
-clonevar telephone = hv221  // all missing
-clonevar mobiletelephone = hv243a  	
+clonevar telephone = hv221
+// clonevar mobiletelephone = hv243a  // not available 	
 clonevar refrigerator = hv209 
 clonevar car = hv212  // car/truck  	
 clonevar bicycle = hv210 
 clonevar motorbike = hv211 
 gen computer=.
-clonevar animal_cart = hv243c
+clonevar animal_cart = sh28f
 
 foreach var in television radio telephone mobiletelephone refrigerator ///
 			   car bicycle motorbike computer animal_cart {
