@@ -769,44 +769,57 @@ sort hh_id ind_id
 ********************************************************************************
 
 desc hv005 hv021 hv022
+/*
+household sample weight (6 decimals)
+primary sampling unit
+sample strata for sampling errors
+*/
 
-gen weight = hv005/1000000 							      // sample weight 
-lab var weight "sample weight"
+// sample weight 
+gen weight = hv005/1000000 						      
+lab var weight "Sample weight"
 
+/* Commented out to be consistent with scripts associated with previous DHS surveys
 
-clonevar psu = hv021									// sample design
-lab var psu "primary sampling unit"
-
+clonevar psu = hv021								
+lab var psu "Primary sampling unit"
 
 clonevar strata = hv022
-lab var strata "sample strata"
+lab var strata "Sample strata"
 
-svyset psu [pw=weight] , strata(strata)	 singleunit(centered)
+* svyset psu [pw=weight] , strata(strata)	 singleunit(centered)
 
+*/
 
 
 codebook hv025											// area: urban-rural	
 recode hv025 (1=1 "urban") (2=0 "rural"), gen (area)			
-lab var area "area: urban-rural"
+lab var area "Area: urban-rural"
 ta hv025 area, m
 
 	
-	
-codebook hv101, ta (99)										   // relationship
+//Relationship to the head of household 	
+codebook hv101, ta (99)
+clonevar relationship = hv101
+// the variable is not used in MPI, so the following lines are not inspected 
+/*
 recode hv101 (1=1 "head")(2=2 "spouse")(3 11=3 "child") ///
 (4/10=4 "extended family")(12/15=5 "not related")(98=.), ///
 gen (relationship)
 lab var relationship "relationship to the head of hh"
 ta hv101 relationship, m	
+*/
 
 
+// sex
+codebook hv104												
+clonevar sex = hv104
+// doesn't recode sex (9=.) as in 2010 script, but ok because there's no missing value here  
+lab var sex "Sex of household member"
 
-codebook hv104													// sex
-clonevar sex = hv104  
-lab var sex "sex of household member"
 
-
-
+//Household headship  // not used for MPI, so the following lines are not inspected
+/*
 bys	hh_id: egen missing_hhead = min(relationship)			// headship
 ta missing_hhead,m 
 gen household_head=.
@@ -820,15 +833,17 @@ lab def head 1"male-headed" 2"female-headed"
 lab val headship head
 lab var headship "household headship"
 ta headship, m
+*/
 
 
-
-codebook hv105, ta (999)							// age; age group
+//Age of household member
+codebook hv105, ta (999)
 clonevar age = hv105  
-replace age = . if age>=98
-lab var age "age of household member"
+replace age = . if age>=98  // 98  don't know, no missing
+lab var age "Age of household member"
 
 
+//Age group 
 recode age (0/4 = 1 "0-4")(5/9 = 2 "5-9")(10/14 = 3 "10-14") ///
 		   (15/17 = 4 "15-17")(18/59 = 5 "18-59")(60/max=6 "60+"), gen(agec7)
 lab var agec7 "age groups (7 groups)"	
@@ -846,22 +861,24 @@ codebook hv115, ta (9) 									 // marital status
 recode hv115 (0=1 "never married") ///
 (1=2 "currently married") (3=3 "widowed") ///
 (4=4 "divorced"), gen (marital)	
-lab var marital "marital status of household member"
+lab var marital "Marital status of household member"
 ta hv115 marital, m
 
 
-gen member = 1 										// hh size
+//Total number of de jure hh members in the household
+gen member = 1 
 bys hh_id: egen hhsize = sum(member)
-lab var hhsize "household size"
+lab var hhsize "Household size"
 ta hhsize, m
+drop member
 
 
-		
-codebook hv024, ta (99)								// subnational regions
+// subnational regions		
+codebook hv024, ta (99)								
 
 
-gen region = hv024
-lab var region "subnational region"
+gen region_raw = hv024
+lab var region_raw "Region for subnational decomposition, not harmonized over time"
   	
 lab def la_reg ///
 1 "Banteay Meanchay" 2 "Battambang" 3 "Kampong Cham" 4 "Kampong Chhnang" ///
@@ -870,10 +887,10 @@ lab def la_reg ///
 14 "Prey Veng" 15 "Pursat" 16 "Ratanak Kiri" 17 "Siem Reap" ///
 18 "Preah Sihanouk" 19 "Stung Treng" 20 "Svay Rieng" ///
 21 "Takeo" 22 "Otdar Meanchey" 23 "Kep"  24 "Pailin" 25 "Tboung Khmum" 
-lab val region la_reg
+lab val region_raw la_reg
 
 
-									// subnational region, harmonised over time
+// subnational region, harmonised over time
 
 recode hv024 (1=1 "Banteay Meanchay") (3 25=2 "Kampong Cham")  ///
 (4=3 "Kampong Chhnang") (5=4 "Kampong Speu") (6=5 "Kampong Thom")  ///
@@ -881,17 +898,20 @@ recode hv024 (1=1 "Banteay Meanchay") (3 25=2 "Kampong Cham")  ///
 (15=10 "Pursat")(17=11 "Siem Reap")(20=12 "Svay Rieng")(21=13 "Takeo") ///
 (22=14 "Otdar Meanchey")(2 24 = 15 "Battambang & Pailin")(7 23=16 "Kampot & Kep") ///
 (9 18=17 "Preah Sihanouk and Koh Kong") (13 19 =18 "Preah Vihear and Stung Treng") ///
-(11 16= 19 "Mondul Kiri and Ratanak Kiri"), gen(region_01)
+(11 16= 19 "Mondul Kiri and Ratanak Kiri"), gen(region)
 
-lab var region_01 "hot: subnational region"
-codebook region_01, ta(99)
+lab var region "Region for subnational decomposition"
+codebook region, ta(99)
 
+save "$path_out/KHM21-22_merged_procd.dta", replace  // proccessed
 
 
 ********************************************************************************
 **#  Step 2 Data preparation  ***
 ***  Standardization of the global MPI indicators   
 ********************************************************************************
+
+use "$path_out/KHM21-22_merged_procd.dta", clear 
 
 ********************************************************************************
 **# Step 2.1 Years of Schooling ***
@@ -900,7 +920,7 @@ codebook region_01, ta(99)
 codebook hv108 hv106, ta(99)
 ta hv108 hv106,m
 
-clonevar  eduyears = hv108 if hv108 < 98              // years of educ
+clonevar  eduyears = hv108 if hv108 < 98  // years of educ (education completed in single years),  98  don't know
 replace eduyears = 6  if hv108==98 & hv106==2      	 // check missing   
 replace eduyears = 12 if hv108==98 & hv106==3 
 
@@ -1622,6 +1642,10 @@ lab var asst_70_u "dst: non-deprivation in assets (x comp)"
 **# Step 2.11 MPI indicators
 ********************************************************************************
 
+clonevar psu = hv021								
+lab var psu "Primary sampling unit"
+clonevar strata = hv022
+lab var strata "Sample strata"
 
 desc hv007 hv006 hv008 						// interview dates
 clonevar intvw_y = hv007 	
