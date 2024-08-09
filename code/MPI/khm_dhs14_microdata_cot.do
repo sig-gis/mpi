@@ -1074,17 +1074,17 @@ drop temp temp2 hhs
 /*The entire household is considered deprived if no household member 
 aged 10 years or older has completed SIX years of schooling.*/
 ******************************************************************* 
-gen	 years_edu6 = (eduyears>=6)
+gen	 years_edu6 = (eduyears>=6)  //  36.05% true
 	/* The years of schooling indicator takes a value of "1" if at least someone 
 	in the hh has reported 6 years of education or more */
-replace years_edu6 = . if eduyears==.
+replace years_edu6 = . if eduyears==.  // 7
 bysort hh_id: egen hh_years_edu6_1 = max(years_edu6)  // 1 if at least someone..
 gen	hh_years_edu6 = (hh_years_edu6_1==1)
 replace hh_years_edu6 = . if hh_years_edu6_1==.
 replace hh_years_edu6 = . if hh_years_edu6==0 & no_missing_edu==0 
-lab var hh_years_edu6 "Household has at least one member with 6 years of edu"
+lab var hh_years_edu6 "Household has at least one member with 6 years of edu"  
 
-
+tab hh_years_edu6, m  // 23.55% deprived
 	
 *** Destitution MPI ***
 /*The entire household is considered deprived if no household member 
@@ -1095,6 +1095,8 @@ replace years_edu1 = . if eduyears==.
 bysort	hh_id: egen hh_years_edu_u = max(years_edu1)
 replace hh_years_edu_u = . if hh_years_edu_u==0 & no_missing_edu==0
 lab var hh_years_edu_u "Household has at least one member with 1 year of edu"
+
+tab hh_years_edu_u, m  // 2.42% deprived
 
 
 ********************************************************************************
@@ -1161,7 +1163,7 @@ replace hh_child_atten = . if hh_child_atten==1 & no_missing_atten==0
 	we replace this household with a value of '.' because there is insufficient 
 	information to conclusively conclude that the household is not deprived */
 lab var hh_child_atten "Household has all school age children up to class 8 in school"
-tab hh_child_atten, miss
+tab hh_child_atten, miss  // 12.62% deprived
 
 /*Note: The indicator takes value 1 if ALL children in school age are attending 
 school and 0 if there is at least one child not attending. Households with no 
@@ -1245,7 +1247,7 @@ foreach var in ha40 {
 gen	f_bmi = ha40/100
 lab var f_bmi "Women's BMI"
 gen	f_low_bmi = (f_bmi<18.5)
-replace f_low_bmi = . if f_bmi==. | f_bmi>=99.97
+replace f_low_bmi = . if f_bmi==. | f_bmi>=99.97  // max is now 53.24
 lab var f_low_bmi "BMI of women < 18.5"
 
 gen	f_low_bmi_u = (f_bmi<17)
@@ -1308,7 +1310,7 @@ replace hh_no_low_bmiage = 1 if no_adults_eligible==1
 	//Households take a value of '1' if there is no eligible adult population.
 drop low_bmi
 lab var hh_no_low_bmiage "Household has no adult with low BMI or BMI-for-age"
-tab hh_no_low_bmiage, miss	
+tab hh_no_low_bmiage, miss  // 12.98% deprived
 
 	/*NOTE that hh_no_low_bmiage takes value 1 if: (a) no any eligible 
 	individuals in the household has (observed) low BMI or (b) there are no 
@@ -1376,6 +1378,7 @@ replace hh_no_underweight = . if temp==.
 replace hh_no_underweight = 1 if no_child_eligible==1 
 	//Households with no eligible children will receive a value of 1
 lab var hh_no_underweight "Household has no child underweight - 2 stdev"
+tab hh_no_underweight, miss  // 85.91% no underweight
 drop temp
 
 
@@ -1399,6 +1402,7 @@ replace hh_no_stunting = . if temp==.
 replace hh_no_stunting = 1 if no_child_eligible==1 
 	//Households with no eligible children will receive a value of 1
 lab var hh_no_stunting "Household has no child stunted - 2 stdev"
+tab hh_no_stunting, miss  // 85.91% no stunting
 drop temp
 
 
@@ -1422,6 +1426,7 @@ replace hh_no_wasting = . if temp==.
 replace hh_no_wasting = 1 if no_child_eligible==1 
 	//Households with no eligible children will receive a value of 1
 lab var hh_no_wasting "Household has no child wasted - 2 stdev"
+tab hh_no_wasting, miss // 92.71% no wasted
 drop temp
 
 
@@ -1485,7 +1490,7 @@ replace hh_nutrition_uw_st = 1 if no_eligibles==1
  	/*We replace households that do not have the applicable population, that is, 
 	women 15-49 & children 0-5, as non-deprived in nutrition*/
 lab var hh_nutrition_uw_st "Household has no individuals malnourished"
-tab hh_nutrition_uw_st, miss
+tab hh_nutrition_uw_st, miss  // 74.72% not deprived
 
 
 *** Destitution MPI ***
@@ -1606,7 +1611,7 @@ tab childu18_mortality_5y, miss
 gen hh_mortality_u18_5y = (childu18_mortality_5y==0)
 replace hh_mortality_u18_5y = . if childu18_mortality_5y==.
 lab var hh_mortality_u18_5y "Household had no under 18 child mortality in the last 5 years"
-tab hh_mortality_u18_5y, miss 
+tab hh_mortality_u18_5y, miss  // 97.12% have none
 
 
 *** Destitution MPI *** 
