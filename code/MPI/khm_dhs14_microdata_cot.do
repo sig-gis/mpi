@@ -1634,7 +1634,7 @@ clonevar electricity = hv206  // has na in DHS 5, but not DHS 6
 codebook electricity, tab (10)
 // doesn't replace 9 with . as in 2010 script, but ok because all values missing here have already been encoded as .
 label var electricity "Household has electricity"
-
+tab electricity, freq  // 40.54% has no electricity
 
 *** Destitution MPI  ***
 *** (same as standard MPI) ***

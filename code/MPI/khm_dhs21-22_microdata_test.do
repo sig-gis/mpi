@@ -1529,56 +1529,93 @@ if the household has electricity */
 ****************************************
 codebook hv206, ta (9)
 
-recode hv206 (0=0 "no") (1=1 "yes") (9=.), gen (elct)
-lab var elct "non-deprivation in electricity"
-ta elct hv206,m
-
-
-svy: prop elct 				// qc: matches the report (p.15)
+recode hv206 (0=0 "no") (1=1 "yes") (9=.), gen (electricity)
+lab var electricity "Household has electricity"
+ta electricity hv206,m
+tab electricity, freq  // 14.72% has no electricity
 
 	
 *** Destitution ***
 *** (same as MPI) ***
 ****************************************
-gen elct_u = elct
-lab var elct_u "dst: non-deprivation in electricity"
+gen electricity_u = electricity
+label var electricity_u "Household has electricity"
 
 
 ********************************************************************************
 **# Step 2.6 Sanitation ***
 ********************************************************************************
+/*
+Improved sanitation facilities include flush or pour flush toilets to sewer 
+systems, septic tanks or pit latrines, ventilated improved pit latrines, pit 
+latrines with a slab, and composting toilets. These facilities are only 
+considered improved if it is private, that is, it is not shared with other 
+households.
+Source: https://unstats.un.org/sdgs/metadata/files/Metadata-06-02-01.pdf
 
+Note: In cases of mismatch between the country report and the internationally 
+agreed guideline, we followed the report.
+*/
+
+desc hv205 hv225 
+
+codebook hv205, ta(99) 	// Type of toilet facility 
+/* Toilet facility categories in survey questionnaire are the same as those in 2014. Output of this line shows the coding and labels are the same as well, except there is an "other" category here coded as 96 in place of a missing (.) category in 2014.
+*/
+clonevar toilet = hv205
+
+codebook hv225  // Share toilet with other households
+	//0=no;1=yes;.=missing
+clonevar shared_toilet = hv225 
 
 *** MPI ***
 /* Householders are not deprived if the household has improved 
 sanitation facilities that are not shared with other households. */
 ********************************************************************
-desc hv205 hv225 
+codebook toilet, tab(30) 
+	/*Note: In Cambodia, the report considers the category other open-response 
+	field. But we consider it as non-improved to be consistent with the 
+	indicator for destitution below */ 
 
-codebook hv205, ta(99) 	
+gen	toilet_mdg = ((toilet<23 | toilet==41) & shared_toilet!=1) 
+	/*Household is assigned a value of '1' if it uses improved sanitation and 
+	does not share toilet with other households  */
+	// '0' is assigned to all other households
 	
-recode hv205 (11/13 15/22 41 = 1 "yes") ///
-(14 23 31 42/96 = 0 "no") (99=.), gen(sani)
+replace toilet_mdg = 0 if (toilet<23 | toilet==41)  & shared_toilet==1   
+	/*Household is assigned a value of '0' if it uses improved sanitation 
+	but shares toilet with other households  */	
+	// 0 real changes made
+
+replace toilet_mdg = 0 if toilet == 14 | toilet == 15
+	/*Household is assigned a value of '0' if it uses non-improved sanitation: 
+	"flush to somewhere else" and "flush don't know where"  */	
+
+replace toilet_mdg = . if toilet==.  | toilet==99  // 99 is handled in the code 1 line above in 2010 script, but there's no 99 in the 2014/2021-22 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 99
+	//Household is assigned a value of '.' if it has missing information 	
+	
+lab var toilet_mdg "Household has improved sanitation with MDG Standards"
+tab toilet toilet_mdg, miss
 
 
-codebook hv225
-
-replace sani = 0 if hv225==1				
-lab var sani "non-deprivation in sanitation"
-ta hv205 sani, m
-
-svy: prop sani 			// qc: matches the report (p.364)
-
-
-*** Destitution ***
+*** Destitution MPI ***
 /* Householders are not deprived if the 
 household has sanitation facilities. */
+/* Specifically, members of the household are considered deprived if household practises 
+open defecation or uses other unidentifiable sanitation practises */
 ********************************************************************
-recode hv205 (11/23 41/43 = 1 "yes") ///
-(31 96 = 0 "no") (99=.), gen(sani_u)
+gen	toilet_u = .
 
-lab var sani_u "dst: non-deprivation in sanitation"
-ta hv205 sani_u, m
+replace toilet_u = 0 if toilet==31 | toilet==96 
+	/*Household is assigned a value of '0' if it practises open defecation or 
+	others */
+	
+replace toilet_u = 1 if toilet!=31 & toilet!=96 & toilet!=. & toilet!=99
+	/*Household is assigned a value of '1' if it does not practise open 
+	defecation or others  */
+	
+lab var toilet_u "Household does not practise open defecation or others"
+tab toilet toilet_u, miss
 
 
 ********************************************************************************
@@ -1675,7 +1712,13 @@ ta hsg_u, m
 ********************************************************************************
 **# Step 2.9 Cooking Fuel 
 ********************************************************************************
+/*
+Solid fuel are solid materials burned as fuels, which includes coal as well as 
+solid biomass fuels (wood, animal dung, crop wastes and charcoal). 
 
+Source: 
+https://apps.who.int/iris/bitstream/handle/10665/141496/9789241548885_eng.pdf
+*/
 	
 *** MPI ***
 /* Householders are considered not deprived if the 
@@ -1708,82 +1751,38 @@ lab var ckfl_u "dst: non-deprivation in cooking fuel"
 **# Step 2.10 Assets ***
 ********************************************************************************
 
-	// radio/walkman/stereo/kindle
-lookfor radio walkman stereo stéréo
-codebook hv207
-clonevar radio = hv207
-lab var radio "hh has radio"
+	//Check that for standard assets in living standards: "no"==0 and yes=="1", none missing
+codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c 
 
-
-	// television/lcd tv/plasma tv/color tv/black & white tv
-lookfor tv television plasma lcd télé tele
-codebook hv208
 clonevar television = hv208 
-lab var television "hh has television"
-
-
-
-	// refrigerator/icebox/fridge
-lookfor refrigerator réfrigérateur refri freezer
-codebook hv209
-clonevar refrigerator = hv209
-lab var refrigerator "hh has refrigerator"
-
-
-
-	// bicycle/cycle rickshaw
-lookfor bicycle bicyclette bicicleta
-codebook hv210
+gen bw_television = .  // not generated in 2010 script, but the variable is not used, so the inconsistency is ok
+clonevar radio = hv207 
+clonevar telephone = hv221  // 223/43,035 have (land-line) telephone, the rest don't
+clonevar landline = hv221
+clonevar mobiletelephone = hv243a  //  38,817/43,035 have mobile, the rest don't	
+clonevar refrigerator = hv209 
+clonevar car = hv212  // car/truck  	
 clonevar bicycle = hv210 
-lab var bicycle "hh has bicycle"	
-
-
-
-	// motorbike/motorized bike/autorickshaw
-lookfor motorbike moto
-codebook hv211	
-clonevar motorbike = hv211
-lab var motorbike "hh has motorbike"
-
-
-
-	// car/van/lorry/truck
-lookfor car van truck
-codebook hv212	
-clonevar car = hv212  
-lab var car "hh has car"	
-
-
-
-	// handphone/telephone/iphone/mobilephone/ipod
-lookfor telephone téléphone mobilephone ipod telefone tele celular
-codebook hv221 hv243a
-gen telephone = (hv221==1 | hv243a==1)
-lab var telephone "hh has telephone"			
-ta hv221 hv243a if telephone==1
-
-
-	// animal cart
-lookfor brouette cart carro carreta
-codebook hv243c
+clonevar motorbike = hv211 
+gen computer=.
 clonevar animal_cart = hv243c
-lab var animal_cart "hh has animal cart"	
 
-
-	// computer/laptop/tablet
-lookfor computer ordinateur laptop ipad tablet 
-codebook hv243e
-clonevar computer = hv243e
-lab var computer "hh has computer"
-
-
-
-lab def lab_asst 0"no" 1"yes"
-foreach var in television radio telephone refrigerator car ///
-			   bicycle motorbike computer animal_cart {
-lab val `var' lab_asst	
-replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98	   	
+	//No missing value, so no change
+foreach var in television radio telephone mobiletelephone refrigerator ///
+			   car bicycle motorbike computer animal_cart {
+replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
 }
+
+	//Label indicators
+lab var television "Household has television"
+lab var radio "Household has radio"	
+* lab var telephone "Household has telephone (landline/mobilephone)"	
+lab var refrigerator "Household has refrigerator"
+lab var car "Household has car"
+lab var bicycle "Household has bicycle"	
+lab var motorbike "Household has motorbike"
+lab var computer "Household has computer"
+lab var animal_cart "Household has animal cart"
 
 		
 *** MPI ***
