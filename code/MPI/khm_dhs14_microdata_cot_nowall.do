@@ -832,7 +832,7 @@ replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 replace water_mdg = . if water_dry==. & water_wet==. 
 // 999 & 99 are handled in the 2 lines of code above in 2010 script, but there's no 999/99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 999/99
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss
+tab water_mdg, miss  // 35.81% deprived
 
 
 *** Destitution MPI ***
@@ -864,7 +864,7 @@ replace water_u = 0 if   (water_u==1 & timetowater_dry > 45 ///
 replace water_u = . if water_dry==. & water_wet==. 	
 // same comment about 999 and 99 as in Standard MPI	
 lab var water_u "Household has drinking water with MDG standards (45 minutes distance)"
-tab water_u, miss
+tab water_u, miss  // 34.61% deprived
 
 
 ********************************************************************************
@@ -936,7 +936,7 @@ gen housing_no_wall = 1
 replace housing_no_wall = 0 if floor_imp==0 | roof_imp==0
 replace housing_no_wall = . if floor_imp==. & roof_imp==.
 lab var housing_no_wall "Household has roof & floor that it is not low quality material"
-tab housing_no_wall, miss
+tab housing_no_wall, miss  // 12.13% deprived
 
 
 *** Destitution MPI ***
@@ -1071,7 +1071,7 @@ lab var n_small_assets2 "Household Number of Small Assets Owned"
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
-
+tab hh_assets2, m  // 8.06% deprived
 
 *** Destitution MPI ***
 /* Members of the household are considered deprived in assets if the household 
@@ -1089,10 +1089,10 @@ lab var hh_assets2_u "Household Asset Ownership: HH has car or at least 1 small 
 
 	//Retain DHS wealth index:
 desc hv270 	
-clonevar windex=hv270
+clonevar windex=hv270  // wealth index
 
 desc hv271
-clonevar windexf=hv271  // Wealth index factor score (5 decimals) 
+clonevar windexf=hv271  // wealth index factor score (5 decimals) 
 
 
 	//Retain data on sampling design: 

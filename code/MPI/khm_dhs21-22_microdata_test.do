@@ -1560,7 +1560,7 @@ agreed guideline, we followed the report.
 desc hv205 hv225 
 
 codebook hv205, ta(99) 	// Type of toilet facility 
-/* Toilet facility categories in survey questionnaire are the same as those in 2014. Output of this line shows the coding and labels are the same as well, except there is an "other" category here coded as 96 in place of a missing (.) category in 2014.
+/* Toilet facility categories in survey questionnaire are the same as those in 2014. Output of this line shows the coding and labels are the same as well, except there is an "other" category here coded as 96 in place of a missing (.) category in 2014. "Other" is considered non-improved to be consistent with 2010.
 */
 clonevar toilet = hv205
 
@@ -1622,91 +1622,186 @@ tab toilet toilet_u, miss
 **# Step 2.7 Drinking Water 
 ********************************************************************************
 
+/*
+Improved drinking water sources include the following: piped water into 
+dwelling, yard or plot; public taps or standpipes; boreholes or tubewells; 
+protected dug wells; protected springs; packaged water; delivered water and 
+rainwater which is located on premises or is less than a 30-minute walk from 
+home roundtrip. 
+Source: https://unstats.un.org/sdgs/metadata/files/Metadata-06-01-01.pdf
 
-*** MPI ***
-/* Householders are not deprived if household have access to safe 
-drinking water and is under 30 minutes walk from home, round trip.*/
-********************************************************************
-codebook hv201, ta(99)
+Note: In cases of mismatch between the country report and the internationally 
+agreed guideline, we followed the report.
+*/
 
-recode hv201 (11/31 41 51/71 = 1 "yes") ///
-(32 42 43 96 = 0 "no") (99=.), gen(dwtr_src)
-lab var dwtr_src "improved main source of drinking water"
-ta hv201 dwtr_src,m
+	/* Note: To be consistent with prior surveys whose observation on the source of drinking water and the time it takes to get the water are available only for dry and wet seasons, we construct the drinking water variable using both hv201 and sh101. Household is identified as deprived if either variable indicates a non-improved category, or they walked more than 30 minutes according to either hv204 or sh104e. */
 
 
-svy: prop dwtr_src			// qc: matches the report (p.357)
+clonevar water1 = hv201
+clonevar water2 = sh101
 
+clonevar timetowater1 = hv204  
+clonevar timetowater2 = sh104e
 
-codebook hv204, ta(99) 								// time to water
+codebook water1, tab(30)
+codebook water2, tab(30)
+
+tab timetowater2, miss nolabel
+tab timetowater2, miss nolabel
+codebook timetowater*, tab (9999)
+
+/*Some DHS might have the variable non-drinking water. Please try looking for it 
+as it will affect the poverty indicator. */
+clonevar ndwater = hv202  
+	//Cambodia DHS 2021-22 has observation for non-drinking water, but it is not used for consistency with prior surveys.
 	
-clonevar wtr = dwtr_src	
-replace wtr = 0 if hv204 >=30 & hv204 <=900						 
-lab var wtr "non-deprivation in drinking water"
-ta dwtr_src wtr,m
 
-
-	
-*** Destitution ***
-/* Householders are not deprived if household have access to safe 
-drinking water and is 45 minutes walk or less from home, round trip.*/
+*** Standard MPI ***
+/* Members of the household are considered deprived if the household 
+does not have access to improved drinking water (according to the SDG 
+guideline) or safe drinking water is at least a 30-minute walk from 
+home, roundtrip */
 ********************************************************************
-clonevar wtr_u = dwtr_src						   
-replace wtr_u = 0 if hv204 >45 & hv204 <=900				  
-lab var wtr_u "dst: non-deprivation in drinking water"
-ta dwtr_src wtr_u,m 
+gen	water_mdg = 1 if water1==11 | water1==12 | water1==14 | ///
+					 water1==21 | water1==41 | ///
+					 water1==51 | water1==71 | ///
+					 water2==11 | water2==12 | water2==14 | ///
+					 water2==21 | water2==41 | ///
+					 water2==51 | water2==71 		
+	/*Non deprived if water is piped into dwelling, piped to yard/plot, 
+	  public tap/standpipe, tube well or borehole, protected well, 
+	  rainwater, bottled water */
+/* unstats.un.org: piped water into 
+dwelling, yard or plot; public taps or standpipes; boreholes or tubewells; 
+protected dug wells; protected springs; packaged water; delivered water and 
+rainwater */
+
+/* Protected spring (31) and piped to neighbor (13) are considered non-improved for harmonization purpose. */
+ 
+
+replace water_mdg = 0 if water1==13 | water1==31 | water1==32 | water1==42 | water1==43 | ///
+						 water1==61 | water1==62 | water1==96 | ///
+						 water2==13 | water2==31 | water2==32 | water2==42 | water2==43 | ///
+						 water2==61 | water2==62 | water2==96 				 
+	/*Deprived if it is piped to neighbor, unprotected well, protected spring, unprotected spring, tanker truck
+	  surface water (river/lake, etc), cart with small tank, other */
+		
+replace water_mdg = 0 if (water_mdg==1 & timetowater1 >= 30 ///
+						  & timetowater1!=. ///
+						  & timetowater1!=996 /// on premises
+						  & timetowater1!=998) /// DK
+						  | (water_mdg==1 & timetowater2 >= 30 ///
+						  & timetowater2!=. ///
+						  & timetowater2!=996 ///
+						  & timetowater2!=998)
+	//Deprived if water is at more than 30 minutes' walk (roundtrip) 
+
+replace water_mdg = . if water1==. & water2==. 
+// 999 & 99 are handled in the 2 lines of code above in 2010 script, but there's no 999/99 in the 2014/2021-22 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 999/99
+lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
+tab water_mdg, miss  // 27.20% deprived
+
+
+*** Destitution MPI ***
+/* Members of the household is identified as destitute if household 
+does not have access to safe drinking water, or safe water is more 
+than 45 minute walk from home, round trip.*/
+********************************************************************
+gen	water_u = 1 if   water1==11 | water1==12 | water1==14 | ///
+					 water1==21 | water1==41 | ///
+					 water1==51 | water1==71 | ///
+					 water2==11 | water2==12 | water2==14 | ///
+					 water2==21 | water2==41 | ///
+					 water2==51 | water2==71 		
+	
+replace water_u = 0 if   water1==13 | water1==31 | water1==32 | water1==42 | water1==43 | ///
+						 water1==61 | water1==62 | water1==96 | ///
+						 water2==13 | water2==31 | water2==32 | water2==42 | water2==43 | ///
+						 water2==61 | water2==62 | water2==96 				 
+
+replace water_u = 0 if   (water_u==1 & timetowater1 > 45 ///
+						  & timetowater1!=. ///
+						  & timetowater1!=996 ///
+						  & timetowater1!=998) ///
+						  | (water_u==1 & timetowater2 > 45 ///
+						  & timetowater2!=. ///
+						  & timetowater2!=996 ///
+						  & timetowater2!=998)
+
+replace water_u = . if water1==. & water2==. 	
+// same comment about 999 and 99 as in Standard MPI	
+lab var water_u "Household has drinking water with MDG standards (45 minutes distance)"
+tab water_u, miss  //  25.81% deprived
 
 
 ********************************************************************************
 **# Step 2.8 Housing ***
 ********************************************************************************
 
-desc hv213 hv214 hv215
-
-codebook hv213, ta (99)			// improved = rudimentary & finished floor 
-recode hv213 (21/35 = 1 "yes") (11 12 96 = 0 "no") (99=.), gen(floor)
-lab var floor "hh has improved floor"
-ta hv213 floor,m
-
-
-codebook hv214, ta (99)					// improved = finished walls 
-recode hv214 (31/37 = 1 "yes") (11/26 96 = 0 "no") (99=.), gen(wall)
-lab var wall "hh has improved wall"
-ta hv214 wall,m
+/* Members of the household are considered deprived if the household 
+has a dirt, sand or dung floor */
+clonevar floor = hv213
+codebook floor, tab(99)  // numeric codes similar to those in 2014, except the addition of "carpet" coded as 35 and "other" as 96
+gen	floor_imp = 1
+replace floor_imp = 0 if floor<=12 | floor==96  
+	//Deprived if mud/earth, sand, dung, other 	
+replace floor_imp = . if floor==. | floor==99 
+lab var floor_imp "Household has floor that it is not earth/sand/dung"
+tab floor floor_imp, miss		
 
 
-codebook hv215, ta (99)					// improved = finished roofing 
-recode hv215 (31/36 = 1 "yes") (11/24 96 = 0 "no") (99=.), gen(roof)
-lab var roof "hh has improved roof"
-ta hv215 roof,m	
+/* Members of the household are considered deprived if the household has walls 
+made of natural or rudimentary materials */
+clonevar wall = hv214 
+codebook wall, tab(99)
+gen	wall_imp = .  // not needed as it is excluded for harmonization purposes
+lab var wall_imp "Household has wall that it is not of low quality materials"
+tab wall wall_imp, miss	
+	
+	
+/* Members of the household are considered deprived if the household has roof 
+made of natural or rudimentary materials */
+clonevar roof = hv215
+codebook roof, tab(99)		
+gen	roof_imp = 1 
+replace roof_imp = 0 if roof<=24 | roof==32 | roof==96  // numeric codes correspond to those in questionnaire
+	/*Deprived if no roof, thatch/palm leaf, mud/earth/lump of earth, 
+	sod/grass, plastic/polythene sheeting, rustic mat, cardboard, 
+	canvas/tent, wood planks/reused wood, unburnt bricks, other */	
+	/* Harmonization: also deprived if wood (roof==32). Wood is available as an option of roof material in 2010, 2014, and 2021-22, but not 2005. Households with wood roofs in 2005 might have been classified as having "other" roof materials (roof==96, which is considered unimproved). To harmonize the housing indicator across the three years, wood is considered an unimproved roof material in 2010, 2014, and 2021-22.*/
+replace roof_imp = . if roof==. | roof==99 	
+lab var roof_imp "Household has roof that it is not of low quality materials"
+tab roof roof_imp, miss
 
 
-*** MPI ***
-/* Householders are not deprived in housing if the roof, 
-floor and walls are constructed from quality materials.*/
+*** Standard MPI ***
+/* Members of the household is deprived in housing if the roof, 
+floor OR walls are constructed from low quality materials.*/
 **************************************************************
-gen hsg = 1
-replace hsg = 0 if floor==0 | wall==0 | roof==0
-replace hsg = . if floor==. & wall==. & roof==.
-lab var hsg "non-deprivation in housing"
-ta hsg, m
+gen housing_1 = .
+lab var housing_1 "Household has roof, floor & walls that it is not low quality material"
+tab housing_1, miss
 
 
-*** Destitution ***
-/* Householders are not deprived in housing if at least two of the three 
-components (roof/floor/walls) are constructed from quality materials. */
+*** Standard MPI Customized ***
+/* Members of the household is deprived in housing if the roof OR
+floor are constructed from low quality materials.*/
 **************************************************************
-gen hsg_u = 1
+gen housing_no_wall = 1
+replace housing_no_wall = 0 if floor_imp==0 | roof_imp==0
+replace housing_no_wall = . if floor_imp==. & roof_imp==.
+lab var housing_no_wall "Household has roof & floor that it is not low quality material"
+tab housing_no_wall, miss  // 8.87% deprived
 
-replace hsg_u = 0 if ///
-(floor==0 & wall==0 & roof==1) | ///
-(floor==0 & wall==1 & roof==0) | ///
-(floor==1 & wall==0 & roof==0) | ///
-(floor==0 & wall==0 & roof==0)
 
-replace hsg_u = . if floor==. & wall==. & roof==.
-lab var hsg_u "dst: non-deprivation in housing"
-ta hsg_u, m
+*** Destitution MPI ***
+/* Members of the household is deprived in housing if two out 
+of three components (roof and walls; OR floor and walls; OR 
+roof and floor) the are constructed from low quality materials. */
+**************************************************************
+gen housing_u = .
+lab var housing_u "Household has one of three aspects(either roof,floor/walls) that is not low quality material"
+tab housing_u, miss
 
 
 ********************************************************************************
@@ -1724,32 +1819,37 @@ https://apps.who.int/iris/bitstream/handle/10665/141496/9789241548885_eng.pdf
 /* Householders are considered not deprived if the 
 household uses non-solid fuels for cooking. */
 *****************************************************************
-codebook hv226, ta (99)
+clonevar cookingfuel = hv226  
+codebook cookingfuel, ta (99)  // numeric codes don't correspond to those in
+// the questionnaire, check their labels
+gen	cooking_mdg = 1
+replace cooking_mdg = 0 if cookingfuel>5 & cookingfuel<95 
+replace cooking_mdg = . if cookingfuel==. | cookingfuel==99
+lab var cooking_mdg "Household has cooking fuel by MDG standards"
+	/* Non deprived if: "electricity", "solar energy", "lpg", "natural gas", "biogas", 
+						"kerosene" , "no food cooked in household", "other"
+	   Deprived if: "coal/lignite", "charcoal", "wood", "straw/shrubs/grass" 
+					"agricultural crop", "animal dung", "garbage/plastic" */			 
+tab cookingfuel cooking_mdg, miss	
 
-
-recode hv226 (1/5 95 96 = 1 "yes") ///
-(9/16 = 0 "no") (99=.), gen(ckfl)
-
-ta hv222 if hv226==96,m  // other uses three stone stove
-
-replace ckfl = 0 if hv226==96 & hv222==9
-
-lab var ckfl "non-deprivation in cooking fuel"	
-ta hv226 ckfl,m 
-
-svy: prop ckfl 				// qc: match the report (p.16)	
-
-
-*** Destitution  ***
-*** (same as MPI) ***
-****************************************	
-clonevar ckfl_u = ckfl 
-lab var ckfl_u "dst: non-deprivation in cooking fuel"	
+	/*Note that in Cambodia DHS 2021-22, the category 'other' cooking fuel is not 
+	identified either as solid fuel or non-solid fuel. Hence this particular 
+	category is identified as 'non-deprived' */
 	
+
+*** Destitution MPI ***
+*** (same as standard MPI) ***
+****************************************
+gen	cooking_u = cooking_mdg
+lab var cooking_u "Household uses clean fuels for cooking"	
 
 ********************************************************************************
 **# Step 2.10 Assets ***
 ********************************************************************************
+/* Members of the household are considered deprived if the household does not 
+own more than one of: radio, TV, telephone, bike, motorbike or refrigerator and 
+does not own a car or truck. */
+/* The list for 2021-22 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, refrigerator, computer or animal cart*/
 
 	//Check that for standard assets in living standards: "no"==0 and yes=="1", none missing
 codebook hv208 hv207 hv221 hv243a hv209 hv212 hv210 hv211 hv243c 
@@ -1773,10 +1873,24 @@ foreach var in television radio telephone mobiletelephone refrigerator ///
 replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
 }
 
+
+// Harmonization: Exclude non-mobile telephone (landline). Replace the following chunk of code with the one below it. Landline is available in 2000, 2010, 2014 and 2021-22, but not 2005. To harmonize the asset indicator across the five years, landline is excluded from 2000, 2010, 2014 and 2021-22 indicators.
+
+/*
+	//Combine information on telephone and mobiletelephone
+replace telephone=1 if telephone==0 & mobiletelephone==1
+replace telephone=1 if telephone==. & mobiletelephone==1
+// telephone=1 if has either telephone/mobiletelephone
+// 43,385 1's, 4 missing
+*/
+
+replace telephone = mobiletelephone
+
+
 	//Label indicators
 lab var television "Household has television"
 lab var radio "Household has radio"	
-* lab var telephone "Household has telephone (landline/mobilephone)"	
+lab var telephone "Household has telephone (mobilephone)"	
 lab var refrigerator "Household has refrigerator"
 lab var car "Household has car"
 lab var bicycle "Household has bicycle"	
@@ -1785,136 +1899,138 @@ lab var computer "Household has computer"
 lab var animal_cart "Household has animal cart"
 
 		
-*** MPI ***
-/* Householders are considered not deprived in assets 
-if the household own more than one of the assets. */
+*** Standard MPI ***
+/* Members of the household are considered deprived in assets if the household 
+does not own more than one of: radio, TV, telephone, refrigerator, bike, motorbike, 
+refrigerator, computer or animal cart and does not own a car or truck.*/
 *****************************************************************************
-egen n_small_asst = rowtotal (television radio telephone refrigerator ///
-bicycle motorbike computer animal_cart), m
-lab var n_small_asst "small assets owned by hh" 
- 
- 
-gen asst = (car==1 | n_small_asst > 1) 
-replace asst = . if car==. & n_small_asst==.
-lab var asst "non-deprivation in assets"
 
+egen n_small_assets2 =rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
+lab var n_small_assets2 "Household Number of Small Assets Owned" 
 
-												// harmonised asset, exc. comp
-egen n_small_asst_70 = rowtotal (television radio telephone ///
-refrigerator bicycle motorbike animal_cart), m
-lab var n_small_asst_70 "small assets owned by hh (x comp)" 
-   
-   
-gen asst_70 = (car==1 | n_small_asst_70 > 1) 
-replace asst_70 = . if car==. & n_small_asst_70==.
-lab var asst_70 "non-deprivation in assets (x comp)"
+gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
+replace hh_assets2 = . if car==. & n_small_assets2==.
+lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
+tab hh_assets2, m  // 8.73% deprived
 
-
-
-*** Destitution ***
-/* Householders are considered not deprived in assets 
-if the household own at least one asset. */
-*****************************************************************************	
-gen	asst_u = (car==1 | n_small_asst>0)
-replace asst_u = . if car==. & n_small_asst==.
-lab var asst_u "dst: non-deprivation in assets"
-
-
-
-gen	asst_70_u = (car==1 | n_small_asst_70>0)  
-replace asst_70_u = . if car==. & n_small_asst_70==.
-lab var asst_70_u "dst: non-deprivation in assets (x comp)"
+*** Destitution MPI ***
+/* Members of the household are considered deprived in assets if the household 
+does not own any assets.*/
+*****************************************************************************
+	
+gen	hh_assets2_u = (car==1 | n_small_assets2>0)
+replace hh_assets2_u = . if car==. & n_small_assets2==.
+lab var hh_assets2_u "Household Asset Ownership: HH has car or at least 1 small assets incl computer & animal cart"
 
 	
 ********************************************************************************
-**# Step 2.11 MPI indicators
+*** Step 2.11 Rename and keep variables for MPI calculation 
 ********************************************************************************
 
-clonevar psu = hv021								
-lab var psu "Primary sampling unit"
+	//Retain DHS wealth index:
+desc hv270 	
+clonevar windex=hv270  // wealth index combined
+
+desc hv271
+clonevar windexf=hv271  // wealth index factor score combined (5 decimals) 
+
+
+	//Retain data on sampling design: 
+desc hv022 hv021	
 clonevar strata = hv022
-lab var strata "Sample strata"
+clonevar psu = hv021
+label var psu "Primary sampling unit"
+label var strata "Sample strata"
 
-desc hv007 hv006 hv008 						// interview dates
-clonevar intvw_y = hv007 	
-clonevar intvw_m = hv006 
-clonevar intvw_d = hv008 
+compare psu hv001  // no difference
 
-
-recode cm_0   	(0=1)(1=0) , gen(d_cm)					// for MPI est 
-recode nutr_2 	(0=1)(1=0) , gen(d_nutr)
-recode satt 	(0=1)(1=0) , gen(d_satt)
-recode educ 	(0=1)(1=0) , gen(d_educ)
-recode elct		(0=1)(1=0) , gen(d_elct)
-recode wtr 		(0=1)(1=0) , gen(d_wtr)
-recode sani		(0=1)(1=0) , gen(d_sani)
-recode hsg 		(0=1)(1=0) , gen(d_hsg)
-recode ckfl 	(0=1)(1=0) , gen(d_ckfl)
-recode asst 	(0=1)(1=0) , gen(d_asst)
-
-
-recode cm_0_u   (0=1)(1=0) , gen(dst_cm)				// for dst est
-recode nutr_2_u (0=1)(1=0) , gen(dst_nutr)
-recode satt_u 	(0=1)(1=0) , gen(dst_satt)
-recode educ_u 	(0=1)(1=0) , gen(dst_educ)
-recode elct_u 	(0=1)(1=0) , gen(dst_elct)
-recode wtr_u  	(0=1)(1=0) , gen(dst_wtr)
-recode sani_u 	(0=1)(1=0) , gen(dst_sani)
-recode hsg_u  	(0=1)(1=0) , gen(dst_hsg)
-recode ckfl_u 	(0=1)(1=0) , gen(dst_ckfl)
-recode asst_u 	(0=1)(1=0) , gen(dst_asst) 
-
-
-recode cm_0   		(0=1)(1=0) , gen(d_cm_01)	 		// for hot MPI est 
-recode nutr_2 		(0=1)(1=0) , gen(d_nutr_01)
-recode satt 		(0=1)(1=0) , gen(d_satt_01)
-recode educ 		(0=1)(1=0) , gen(d_educ_01)
-recode elct			(0=1)(1=0) , gen(d_elct_01)
-recode wtr 			(0=1)(1=0) , gen(d_wtr_01)
-recode sani			(0=1)(1=0) , gen(d_sani_01)
-recode hsg 			(0=1)(1=0) , gen(d_hsg_01)
-recode ckfl 		(0=1)(1=0) , gen(d_ckfl_01)
-recode asst_70 		(0=1)(1=0) , gen(d_asst_01)
+	//Retain year, month & date of interview:
+desc hv007 hv006 hv008
+clonevar year_interview = hv007 	
+clonevar month_interview = hv006 
+clonevar date_interview = hv008
  
+save "$path_out/khm_dhs21-22_raw.dta", replace 
 
-recode cm_0_u   	(0=1)(1=0) , gen(dst_cm_01)			// for hot dst est
-recode nutr_2_u		(0=1)(1=0) , gen(dst_nutr_01)
-recode satt_u 		(0=1)(1=0) , gen(dst_satt_01)
-recode educ_u 		(0=1)(1=0) , gen(dst_educ_01)
-recode elct_u 		(0=1)(1=0) , gen(dst_elct_01)
-recode wtr_u  		(0=1)(1=0) , gen(dst_wtr_01)
-recode sani_u 		(0=1)(1=0) , gen(dst_sani_01)
-recode hsg_u  		(0=1)(1=0) , gen(dst_hsg_01)
-recode ckfl_u 		(0=1)(1=0) , gen(dst_ckfl_01)
-recode asst_70_u 	(0=1)(1=0) , gen(dst_asst_01) 
+*** Rename key global MPI indicators for estimation ***
+recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)
+recode hh_nutrition_uw_st 	(0=1)(1=0) , gen(d_nutr)
+recode hh_child_atten 		(0=1)(1=0) , gen(d_satt)
+recode hh_years_edu6 		(0=1)(1=0) , gen(d_educ)
+recode electricity 			(0=1)(1=0) , gen(d_elct)
+recode water_mdg 			(0=1)(1=0) , gen(d_wtr)
+recode toilet_mdg 			(0=1)(1=0) , gen(d_sani)
+recode housing_no_wall 		(0=1)(1=0) , gen(d_hsg)  // housing_1 in standard MPI
+recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl)
+recode hh_assets2 			(0=1)(1=0) , gen(d_asst)
+ 
+/**
+Destitution MPI is not used, so the following lines are not run
+
+*** Rename key global MPI indicators for destitution estimation ***
+recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm)
+recode hh_nutrition_uw_st_u (0=1)(1=0) , gen(dst_nutr)
+recode hh_child_atten_u 	(0=1)(1=0) , gen(dst_satt)
+recode hh_years_edu_u 		(0=1)(1=0) , gen(dst_educ)
+recode electricity_u		(0=1)(1=0) , gen(dst_elct)
+recode water_u 				(0=1)(1=0) , gen(dst_wtr)
+recode toilet_u 			(0=1)(1=0) , gen(dst_sani)
+recode housing_u 			(0=1)(1=0) , gen(dst_hsg)
+recode cooking_u			(0=1)(1=0) , gen(dst_ckfl)
+recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst) 
+
+**/
+
+*** Rename indicators for changes over time estimation ***	
+recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm_01)
+recode hh_nutrition_uw_st 	(0=1)(1=0) , gen(d_nutr_01)
+recode hh_child_atten 		(0=1)(1=0) , gen(d_satt_01)
+recode hh_years_edu6 		(0=1)(1=0) , gen(d_educ_01)
+recode electricity 			(0=1)(1=0) , gen(d_elct_01)
+recode water_mdg 			(0=1)(1=0) , gen(d_wtr_01)
+recode toilet_mdg 			(0=1)(1=0) , gen(d_sani_01)
+recode housing_no_wall 		(0=1)(1=0) , gen(d_hsg_01)  // housing_1 in standard MPI
+recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl_01)
+recode hh_assets2 			(0=1)(1=0) , gen(d_asst_01)	
+
+/**
+Destitution MPI is not used, so the following lines are not run
+
+recode hh_mortality_u       (0=1)(1=0) , gen(dst_cm_01)
+recode hh_nutrition_uw_st_u (0=1)(1=0) , gen(dst_nutr_01)
+recode hh_child_atten_u 	(0=1)(1=0) , gen(dst_satt_01)
+recode hh_years_edu_u 		(0=1)(1=0) , gen(dst_educ_01)
+recode electricity_u		(0=1)(1=0) , gen(dst_elct_01)
+recode water_u	 			(0=1)(1=0) , gen(dst_wtr_01)
+recode toilet_u 			(0=1)(1=0) , gen(dst_sani_01)
+recode housing_u 			(0=1)(1=0) , gen(dst_hsg_01)
+recode cooking_u			(0=1)(1=0) , gen(dst_ckfl_01)
+recode hh_assets2_u 		(0=1)(1=0) , gen(dst_asst_01) 
+**/
+
+	/*In this survey, the harmonised 'region_01' variable is the 
+	same as the standardised 'region' variable.*/	
+clonevar region_01 = region 
 
 
+*** Keep main variables require for MPI calculation ***
+// Harmonization: headship not kept as it is not computed in 2021-22
 
-lab def lab_dp 1"yes" 0"no"
-foreach var in d_* dst_* d_*_* dst_*_* {
-lab val `var' lab_dp
-}
-
-foreach var in cm nutr satt educ elct wtr sani hsg ckfl asst {
-lab var d_`var' "deprived in `var'"
-lab var dst_`var' "deprived in `var' (dst)"
-lab var d_`var'_01 "deprived in `var' (hot)"
-lab var dst_`var'_01 "deprived in `var' (dst-hot)"
-}
+keep hh_id ind_id psu strata subsample weight ///
+area region region_01 agec4 agec2 ///
+d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst /// 
+d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
+d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 
 
-keep hh_id ind_id strata psu weight sex age area ///
-agec7 agec4 agec2 region region_* headship d_* dst_* 
-
-	 
-order hh_id ind_id strata psu weight sex age area ///
-agec7 agec4 agec2 region region_* headship d_* dst_* 
-
-
-mdesc psu strata area age headship region region_* d_* dst_*
+order hh_id ind_id psu strata subsample weight ///
+area region region_01 agec4 agec2 ///
+d_cm d_nutr d_satt d_educ d_elct d_wtr d_sani d_hsg d_ckfl d_asst ///
+d_cm_01 d_nutr_01 d_satt_01 d_educ_01 ///
+d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 
 
-
+*** Generate coutry and survey details for estimation ***
 char _dta[cty] "Cambodia"
 char _dta[ccty] "KHM"
 char _dta[year] "2021-2022" 	
@@ -1923,7 +2039,7 @@ char _dta[ccnum] "116"
 char _dta[type] "micro"
 
 
-
+*** Sort, compress and save data for estimation ***
 sort ind_id
 compress
 la da "Micro data for `_dta[ccty]' (`_dta[ccnum]') from `c(current_date)' (`c(current_time)')."
