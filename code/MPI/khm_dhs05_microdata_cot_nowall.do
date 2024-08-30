@@ -940,7 +940,7 @@ replace water_mdg = . if water_dry==. & water_wet==.
 replace water_mdg = . if water_dry==99 & water_wet==99
 
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss
+tab water_mdg, miss  // 48.4% non-deprived
 
 
 
@@ -1183,7 +1183,7 @@ count if n_small_assets2==1 & car!=1 & telephone!=1  // if these 6041 deprived p
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
-
+tab hh_assets2, m  // about 30% deprived
 
 /**
 Destitution MPI is not used, so the following lines are not inspected 

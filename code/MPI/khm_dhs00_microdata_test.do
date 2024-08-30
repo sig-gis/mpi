@@ -1742,20 +1742,22 @@ tab shared_toilet, miss
 sanitation facility is not improved (according to the SDG guideline) 
 or it is improved but shared with other households*/
 ********************************************************************
-gen	toilet_mdg = ((toilet<23 | toilet==41) & shared_toilet!=1) 
+gen	toilet_mdg = (toilet==11 & shared_toilet!=1) 
 	/*Household is assigned a value of '1' if it uses improved sanitation and 
 	does not share toilet with other households  */
 	// all others are assigned 0 to be overriden
-	// toilet==14 | toilet==15 (non-improved) to be updated to 0
+	// Only flush connected to sewer/with septic tank (11) is considered improved here in 2000, assuming no household uses improved types identifiable only in later surveys (flush to pit latrine, ventilated improved pit latrine, pit latrine with slab, composting toilet)
 	
-replace toilet_mdg = 0 if (toilet<23 | toilet==41)  & shared_toilet==1   
+replace toilet_mdg = 0 if (toilet==11)  & shared_toilet==1  
 	/*Household is assigned a value of '0' if it uses improved sanitation 
-	but shares toilet with other households  */	
+	but shares toilet with other households  */
+	// 0 real changes made
 	
 replace toilet_mdg = 0 if toilet == 14 | toilet == 15 | toilet==99 
 	/*Household is assigned a value of '0' if it uses non-improved sanitation: 
 	"flush to somewhere else" and "flush don't know where"  */
 	// also if it's toilet facility type information is coded as 99
+	// 0 real changes made
 
 replace toilet_mdg = . if toilet==.  // 99 is handled in the code 1 line above in this script, but there's no 99 in the 2014 data, so the inconsistency is ok
 	//Household is assigned a value of '.' if it has missing information 	
@@ -1865,11 +1867,11 @@ gen timetowater = .
 clonevar timetowater_dry = hv204  // many (9,896) missing 
 clonevar timetowater_wet = sh22c  // many (13,738) missing
 
-codebook water_dry, tab(30)  // same labels as 2010 except that 61==tanker truck for 2010, but tanker truck/water ventor here for 2005
-codebook water_wet, tab(30)  // same comment as water_dry
+codebook water_dry, tab(30) 
+codebook water_wet, tab(30)
 
-tab timetowater_dry, miss nolabel  // same labels as 2010
-tab timetowater_wet, miss nolabel  // same labels as 2010
+tab timetowater_dry, miss nolabel
+tab timetowater_wet, miss nolabel
 codebook timetowater*, tab (9999)
 
 /*Some DHS might have the variable non-drinking water. Please try looking for it 
@@ -1886,10 +1888,10 @@ guideline) or safe drinking water is at least a 30-minute walk from
 home, roundtrip */
 ********************************************************************
 gen	water_mdg = 1 if water_dry==11 | water_dry==12 | water_dry==13 | ///
-					 water_dry==21 | water_dry==31 | water_dry==41 | ///
+					 water_dry==31 | water_dry==32 | water_dry==33 | water_dry==34 | ///
 					 water_dry==51 | water_dry==71 | ///
 					 water_wet==11 | water_wet==12 | water_wet==13 | ///
-					 water_wet==21 | water_wet==31 | water_wet==41 | ///
+					 water_wet==31 | water_wet==32 | water_wet==33 | water_wet==34 | ///
 					 water_wet==51 | water_wet==71 		
 	/*Non deprived if water is piped into dwelling, piped to yard/plot, 
 	  public tap/standpipe, tube well or borehole, protected well, 
@@ -1899,13 +1901,15 @@ dwelling, yard or plot; public taps or standpipes; boreholes or tubewells;
 protected dug wells; protected springs; packaged water; delivered water and 
 rainwater */
 
-replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
-						 water_dry==61 | water_dry==62 | water_dry==96 | ///
-						 water_wet==32 | water_wet==42 | water_wet==43 | ///
-						 water_wet==61 | water_wet==62 | water_wet==96 				 
+/* Spring is not identified as protected or not in 2000. It is considered non-improved. */
+
+replace water_mdg = 0 if water_dry==21 | water_dry==22 | water_dry==41 | water_dry==42 | ///
+						 water_dry==61 | water_dry==96 | ///
+						 water_wet==21 | water_wet==22 | water_wet==41 | water_wet==42 | ///
+						 water_wet==61 | water_wet==96 				 
 	/*Deprived if it is unprotected well, unprotected spring, tanker truck
 	  surface water (river/lake, etc), cart with small tank, other */
-	// no "cart with small tank" here for 2005
+	// no "cart with small tank" for 2005
 
 replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 						  & timetowater_dry!=. ///
@@ -1923,7 +1927,7 @@ replace water_mdg = . if water_dry==. & water_wet==.
 replace water_mdg = . if water_dry==99 & water_wet==99
 
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss
+tab water_mdg, miss  // 27.43% non-deprived
 
 
 
@@ -1985,14 +1989,9 @@ tab floor floor_imp, miss
 
 /* Members of the household are considered deprived if the household has walls 
 made of natural or rudimentary materials */
-clonevar wall = hv214  // na in DHS 5, but not DHS 6
-// In the questionnaires, main material of the walls is asked in 2005, whereas main material of the EXTERIOR walls is asked in 2014. The categories are otherwise more or less the same except in 2014, finished walls include covered adobe as an additional category (35 is wood plank in 2005, but in 2014 35 is covered adobe and 36 is wood plank).
-codebook wall, tab(99)  // numeric codes correspond to those in questionnaire
-gen	wall_imp = 1 
-replace wall_imp = 0 if wall<=28 | wall==96  
-	/*Deprived if no walls, palm/bamboo/thatch, dirt, bamboo with mud, straw with mud, uncovered adobe, plywood, carton, reused wood, metal*/
-
-replace wall_imp = . if wall==. | wall==99 
+clonevar wall = hv214
+codebook wall, tab(99)
+gen	wall_imp = .  // not needed as it is excluded for harmonization purposes 
 lab var wall_imp "Household has wall that it is not of low quality materials"
 tab wall wall_imp, miss	
 	
@@ -2016,11 +2015,9 @@ tab roof roof_imp, miss
 /* Members of the household is deprived in housing if the roof, 
 floor OR walls are constructed from low quality materials.*/
 **************************************************************
-gen housing_1 = 1
-replace housing_1 = 0 if floor_imp==0 | wall_imp==0 | roof_imp==0
-replace housing_1 = . if floor_imp==. & wall_imp==. & roof_imp==.
+gen housing_1 = .
 lab var housing_1 "Household has roof, floor & walls that it is not low quality material"
-tab housing_1, miss  // about half 0 half 1
+tab housing_1, miss
 
 
 *** Standard MPI Customized***
@@ -2031,7 +2028,7 @@ gen housing_no_wall = 1
 replace housing_no_wall = 0 if floor_imp==0 | roof_imp==0
 replace housing_no_wall = . if floor_imp==. & roof_imp==.
 lab var housing_no_wall "Household has roof & floor that it is not low quality material"
-tab housing_no_wall, miss  // about 30% 0 70% 1
+tab housing_no_wall, miss  // about 50% 0 50% 1
 
 
 
@@ -2074,8 +2071,7 @@ clonevar cookingfuel = hv226
 /* Members of the household are considered deprived if the 
 household uses solid fuels and solid biomass fuels for cooking. */
 *****************************************************************
-codebook cookingfuel, tab(99)  // numeric codes don't correspond to those in
-// the questionnaire, check their labels
+codebook cookingfuel, tab(99)
 gen	cooking_mdg = 1
 replace cooking_mdg = 0 if cookingfuel>5 & cookingfuel<95 
 replace cooking_mdg = . if cookingfuel==. | cookingfuel==99
@@ -2085,10 +2081,6 @@ lab var cooking_mdg "Household has cooking fuel by MDG standards"
 	   Deprived if: "coal/lignite", "charcoal", "wood", "straw/shrubs/grass" 
 					"agricultural crop", "animal dung" */			 
 tab cookingfuel cooking_mdg, miss	
-
-	/*Note that in Cambodia DHS 2005, the category 'other' cooking fuel is not 
-	identified either as solid fuel or non-solid fuel. Hence this particular 
-	category is identified as 'non-deprived' */
 
 	
 *** Destitution MPI ***
@@ -2104,7 +2096,7 @@ lab var cooking_u "Household uses clean fuels for cooking"
 /* Members of the household are considered deprived if the household does not 
 own more than one of: radio, TV, telephone, bike, motorbike or refrigerator and 
 does not own a car or truck. */
-/* The list for 2014 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, computer or animal cart*/
+/* The list for 2000 should be: radio, TV, telephone (including mobile & non-mobile telephone info), refrigerator, bike, motorbike, computer or animal cart*/
 /* In 2005, telephone tabulated in report includes only mobile telephone, animal cart not tabulated in report. Non-mobile telephone is not asked about in questionnaire, but a question is asked about the ownership of an oxcart or horsecart. */
 /* Comparing the 2005 & 2014 questionnaires, motorbike question includes moped in 2005 but not in 2014. Motorcycle-cart is asked about in 2014, but not 2005. A question about ownership of an oxcart or horsecart is also asked in 2014. Car/truck question includes tractor in 2014, but not 2005. */
 
@@ -2124,20 +2116,13 @@ clonevar motorbike = hv211
 gen computer=.
 clonevar animal_cart = sh28f
 
-foreach var in television radio telephone mobiletelephone refrigerator ///
-			   car bicycle motorbike computer animal_cart {
-replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
+foreach var in television radio telephone refrigerator car bicycle motorbike computer animal_cart {
+	replace `var' = . if `var'==9 | `var'==99 | `var'==8 | `var'==98 
 }
 	//Missing values replaced
 
-// Harmonization: Exclude non-mobile telephone (landline). Replace the following chunk of code with the one below it. Landline is available in 2010 and 2014, but not 2005. To harmonize the asset indicator across the three years, landline is excluded from 2010 and 2014 indicators.
-
-/*
-replace telephone=1 if telephone!=1 & mobiletelephone==1	
-// telephone is 1 if household has either telephone or mobilephone
-*/
-
-replace telephone = mobiletelephone
+// Harmonization: Assume no household owns mobile telephone in 2000, and use mobile telephone only (excluding non-mobile telephone (landline)).
+replace telephone = 0
 
 
 	//Label indicators
@@ -2161,12 +2146,11 @@ refrigerator, computer or animal cart and does not own a car or truck.*/
 egen n_small_assets2 = rowtotal(television radio telephone refrigerator bicycle motorbike computer animal_cart), missing
 lab var n_small_assets2 "Household Number of Small Assets Owned" 
 
-count if n_small_assets2==1 & car!=1 & telephone!=1  // if these 6041 deprived people own any land-line telephone, they would own 2 assets and therefore be non-deprived in asset ownership
 
 gen hh_assets2 = (car==1 | n_small_assets2 > 1) 
 replace hh_assets2 = . if car==. & n_small_assets2==.
 lab var hh_assets2 "Household Asset Ownership: HH has car or more than 1 small assets incl computer & animal cart"
-
+tab hh_assets2, m  // about half deprived
 
 /**
 Destitution MPI is not used, so the following lines are not inspected 
@@ -2189,11 +2173,11 @@ lab var hh_assets2_u "Household Asset Ownership: HH has car or at least 1 small 
 ********************************************************************************
 
 	//Retain DHS wealth index:
-desc hv270 	
-clonevar windex=hv270
+desc hv270 	// not found
+// clonevar windex=hv270
 
-desc hv271
-clonevar windexf=hv271  // Wealth index factor score (5 decimals) 
+desc hv271  // not found
+// clonevar windexf=hv271
 
 
 	//Retain data on sampling design: 
@@ -2203,7 +2187,7 @@ clonevar psu = hv021
 label var psu "Primary sampling unit"
 label var strata "Sample strata"
 
-compare psu hv001  // no difference 1-557
+compare psu hv001  // no difference
 
 	//Retain year, month & date of interview:
 desc hv007 hv006 hv008
@@ -2211,9 +2195,9 @@ clonevar year_interview = hv007
 clonevar month_interview = hv006 
 clonevar date_interview = hv008
  
-save "$path_out/khm_dhs05_raw.dta", replace 
+save "$path_out/khm_dhs00_raw.dta", replace 
 
-use "$path_out/khm_dhs05_raw.dta", clear
+use "$path_out/khm_dhs00_raw.dta", clear
 
 *** Rename key global MPI indicators for estimation ***
 recode hh_mortality_u18_5y  (0=1)(1=0) , gen(d_cm)
@@ -2223,7 +2207,7 @@ recode hh_years_edu6 		(0=1)(1=0) , gen(d_educ)
 recode electricity 			(0=1)(1=0) , gen(d_elct)
 recode water_mdg 			(0=1)(1=0) , gen(d_wtr)
 recode toilet_mdg 			(0=1)(1=0) , gen(d_sani)
-recode housing_1 			(0=1)(1=0) , gen(d_hsg)
+recode housing_no_wall 		(0=1)(1=0) , gen(d_hsg)  // housing_1 in standard MPI
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst)
 
@@ -2254,7 +2238,7 @@ recode hh_years_edu6 		(0=1)(1=0) , gen(d_educ_01)
 recode electricity 			(0=1)(1=0) , gen(d_elct_01)
 recode water_mdg 			(0=1)(1=0) , gen(d_wtr_01)
 recode toilet_mdg 			(0=1)(1=0) , gen(d_sani_01)
-recode housing_1 			(0=1)(1=0) , gen(d_hsg_01)
+recode housing_no_wall 		(0=1)(1=0) , gen(d_hsg_01)  // housing_1 in standard MPI
 recode cooking_mdg 			(0=1)(1=0) , gen(d_ckfl_01)
 recode hh_assets2 			(0=1)(1=0) , gen(d_asst_01)	
 
@@ -2302,7 +2286,7 @@ d_elct_01 d_wtr_01 d_sani_01 d_hsg_01 d_ckfl_01 d_asst_01
 *** Generate coutry and survey details for estimation ***
 char _dta[cty] "Cambodia"
 char _dta[ccty] "KHM"
-char _dta[year] "2005" 	
+char _dta[year] "2000" 	
 char _dta[survey] "DHS"
 char _dta[ccnum] "116"
 char _dta[type] "micro"
@@ -2312,4 +2296,4 @@ char _dta[type] "micro"
 sort ind_id
 compress
 la da "Micro data for `_dta[ccty]' (`_dta[ccnum]') from `c(current_date)' (`c(current_time)')."
-save "$path_out/khm_dhs05.dta", replace 
+save "$path_out/khm_dhs00.dta", replace 
