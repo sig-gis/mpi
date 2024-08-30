@@ -193,7 +193,7 @@ will be produced from using this ado file (datalab_z_r_rc and datalab_prev_rc)*/
 gen str30 datalab = "children_nutri_khm" 
 lab var datalab "Working file"
 
-// CREATE folder manually before running the igrowup_restricted command: path_out "../../data/MPI/khm_dhs14"
+// CREATE folder manually before running the igrowup_restricted command: path_out "../../data/MPI/khm_dhs00_test"
 
 /*We now run the command to calculate the z-scores with the adofile */
 igrowup_restricted reflib datalib datalab gender age ageunit weight height ///
