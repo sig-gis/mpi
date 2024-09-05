@@ -1,6 +1,8 @@
 
 | file_or_folder | description |
 | --- | --- |
+| khm_dhsYY_microdata_hmn.do | generates microdata in preparation for calculation of MPI harmonized across 2000 2005 2010 2014 and 2021-22 |
+| khm_dhs_mpi_hmn_cluster.do | calculates MPI with microdata generated from khm_dhsYY_microdata_hmn.do |
 | khm_dhsYY_microdata_cot.do | generates microdata in preparation for calculation of MPI harmonized across 2005 2010 and 2014 |
 | khm_dhsYY_cluster_cot.do | calculates MPI with microdata generated from khm_dhsYY_microdata_cot.do |
 | khm_dhsYY_microdata_cot_nowall.do | generates the same microdata as in khm_dhsYY_microdata_cot.do except for the exclusion of wall material from housing indicator |
