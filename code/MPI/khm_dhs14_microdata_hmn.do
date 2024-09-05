@@ -16,7 +16,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/MPI/khm_dhs14_cot" 	  
-global path_out "../../data/MPI/khm_dhs14_cot_nowall"
+global path_out "../../data/MPI/khm_hmn"
 global path_ado "ado"
 
 
@@ -799,10 +799,10 @@ guideline) or safe drinking water is at least a 30-minute walk from
 home, roundtrip */
 ********************************************************************
 gen	water_mdg = 1 if water_dry==11 | water_dry==12 | water_dry==13 | ///
-					 water_dry==21 | water_dry==31 | water_dry==41 | ///
+					 water_dry==21 | water_dry==31 | ///
 					 water_dry==51 | water_dry==71 | ///
 					 water_wet==11 | water_wet==12 | water_wet==13 | ///
-					 water_wet==21 | water_wet==31 | water_wet==41 | ///
+					 water_wet==21 | water_wet==31 | ///
 					 water_wet==51 | water_wet==71 		
 	/*Non deprived if water is piped into dwelling, piped to yard/plot, 
 	  public tap/standpipe, tube well or borehole, protected well, 
@@ -812,11 +812,13 @@ dwelling, yard or plot; public taps or standpipes; boreholes or tubewells;
 protected dug wells; protected springs; packaged water; delivered water and 
 rainwater */
 
-replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
+/* Protected spring (41) is considered non-improved for harmonization purpose. */
+
+replace water_mdg = 0 if water_dry==32 | water_dry==41 | water_dry==42 | water_dry==43 | ///
 						 water_dry==61 | water_dry==62 | water_dry==96 | ///
-						 water_wet==32 | water_wet==42 | water_wet==43 | ///
+						 water_wet==32 | water_wet==41 | water_wet==42 | water_wet==43 | ///
 						 water_wet==61 | water_wet==62 | water_wet==96 				 
-	/*Deprived if it is unprotected well, unprotected spring, tanker truck
+	/*Deprived if it is unprotected well, protected/unprotected spring, tanker truck
 	  surface water (river/lake, etc), cart with small tank, other */
 		
 replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
@@ -832,7 +834,7 @@ replace water_mdg = 0 if (water_mdg==1 & timetowater_dry >= 30 ///
 replace water_mdg = . if water_dry==. & water_wet==. 
 // 999 & 99 are handled in the 2 lines of code above in 2010 script, but there's no 999/99 in the 2014 data, so the inconsistency is ok, 2005 script should follow 2010 script if there's 999/99
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss  // 35.81% deprived
+tab water_mdg, miss  // 36.18% deprived
 
 
 *** Destitution MPI ***

@@ -15,7 +15,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/MPI/khm_dhs10_cot" 	  
-global path_out "../../data/MPI/khm_dhs10_cot_nowall"
+global path_out "../../data/MPI/khm_hmn"
 global path_ado "ado"
 
 	
@@ -766,15 +766,17 @@ home, roundtrip */
 ********************************************************************
 
 gen	water_mdg = 1 if water_dry==11 | water_dry==12 | water_dry==13 | ///
-					 water_dry==21 | water_dry==31 | water_dry==41 | ///
+					 water_dry==21 | water_dry==31 | ///
 					 water_dry==51 | water_dry==71 | ///
 					 water_wet==11 | water_wet==12 | water_wet==13 | ///
-					 water_wet==21 | water_wet==31 | water_wet==41 | ///
+					 water_wet==21 | water_wet==31 | ///
 					 water_wet==51 | water_wet==71 		
-	
-replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
+
+/* Protected spring (41) is considered non-improved for harmonization purpose. */
+
+replace water_mdg = 0 if water_dry==32 | water_dry==41 | water_dry==42 | water_dry==43 | ///
 						 water_dry==61 | water_dry==62 | water_dry==96 | ///
-						 water_wet==32 | water_wet==42 | water_wet==43 | ///
+						 water_wet==32 | water_wet==41 | water_wet==42 | water_wet==43 | ///
 						 water_wet==61 | water_wet==62 | water_wet==96 				 
 						 
 tab timetowater_dry, nol
@@ -797,6 +799,7 @@ replace water_mdg = . if water_dry==99 & water_wet==99
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
 tab water_wet water_mdg, miss
 tab water_dry water_mdg, miss
+tab water_mdg, miss  // 45.18% deprived
 
 
 *** Destitution MPI ***

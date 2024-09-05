@@ -14,7 +14,7 @@ set more off
 cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
 *** Working Folder Path ***
 global path_in "../../data/MPI/khm_dhs05_cot"  
-global path_out "../../data/MPI/khm_dhs05_cot_nowall"
+global path_out "../../data/MPI/khm_hmn"
 
 
 ********************************************************************************
@@ -903,10 +903,10 @@ guideline) or safe drinking water is at least a 30-minute walk from
 home, roundtrip */
 ********************************************************************
 gen	water_mdg = 1 if water_dry==11 | water_dry==12 | water_dry==13 | ///
-					 water_dry==21 | water_dry==31 | water_dry==41 | ///
+					 water_dry==21 | water_dry==31 | ///
 					 water_dry==51 | water_dry==71 | ///
 					 water_wet==11 | water_wet==12 | water_wet==13 | ///
-					 water_wet==21 | water_wet==31 | water_wet==41 | ///
+					 water_wet==21 | water_wet==31 | ///
 					 water_wet==51 | water_wet==71 		
 	/*Non deprived if water is piped into dwelling, piped to yard/plot, 
 	  public tap/standpipe, tube well or borehole, protected well, 
@@ -916,11 +916,13 @@ dwelling, yard or plot; public taps or standpipes; boreholes or tubewells;
 protected dug wells; protected springs; packaged water; delivered water and 
 rainwater */
 
-replace water_mdg = 0 if water_dry==32 | water_dry==42 | water_dry==43 | ///
+/* Protected spring (41) is considered non-improved for harmonization purpose. */
+
+replace water_mdg = 0 if water_dry==32 | water_dry==41 | water_dry==42 | water_dry==43 | ///
 						 water_dry==61 | water_dry==62 | water_dry==96 | ///
-						 water_wet==32 | water_wet==42 | water_wet==43 | ///
+						 water_wet==32 | water_wet==41 | water_wet==42 | water_wet==43 | ///
 						 water_wet==61 | water_wet==62 | water_wet==96 				 
-	/*Deprived if it is unprotected well, unprotected spring, tanker truck
+	/*Deprived if it is unprotected well, protected/unprotected spring, tanker truck
 	  surface water (river/lake, etc), cart with small tank, other */
 	// no "cart with small tank" here for 2005
 
@@ -940,7 +942,7 @@ replace water_mdg = . if water_dry==. & water_wet==.
 replace water_mdg = . if water_dry==99 & water_wet==99
 
 lab var water_mdg "Household has drinking water with MDG standards (considering distance)"
-tab water_mdg, miss  // 48.4% non-deprived
+tab water_mdg, miss  // 52.05% deprived 
 
 
 
