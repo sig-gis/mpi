@@ -22,6 +22,7 @@
 | plot.py | bar chart of regional MPI based on Cambodia DHS 2014 |
 | postprocess.py | compiles regional/cluster-level data files and joins compiled tables to shapefiles |
 | postprocess_summarize_mpi.py | compiles MPI-related outputs (from khm_dhs_mpi_hmn_cluster.do), summarize missingness info, save as CSV |
+| postprocess_map.py | joins MPI CSVs output from postprocess_summarize_mpi.py to cluster point shapefiles |
 | setup.do | test importing mpi calculation packages |
 | tha* | Thailand scripts |
 | v* | Vietnam scripts |
