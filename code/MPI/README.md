@@ -12,7 +12,8 @@
 | khm_dhsYY_dp.do | scripts from OPHI |
 | *_test.do | tests during development |
 | ado | dependencies of microdata generation do files |
-| analysis.ipynb | SE CI missingness of standard MPI and MPI harmonized across 2005 2010 and 2014  |
+| analysis.ipynb | SE CI missingness of standard MPI and MPI harmonized across 2005 2010 and 2014 |
+| analyze.ipynb | visualizes basic info related to MPI harmonized across 2000 2005 2010 2014 and 2021-22 |
 | ben* | MPI calculation scripts for Benin from UNDP(?) |
 | eda.do | exploratory data analysis while going through khm_dhs14_microdata_test.do |
 | eda.ipynb | check out raw data and microdata |
