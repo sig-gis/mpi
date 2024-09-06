@@ -16,9 +16,11 @@
 | ben* | MPI calculation scripts for Benin from UNDP(?) |
 | eda.do | exploratory data analysis while going through khm_dhs14_microdata_test.do |
 | eda.ipynb | check out raw data and microdata |
+| eda_check_microdata.ipynb | check updates done to 05 10 14 microdata for harmonization with 00 and 21-22 |
 | eda.py | recreation of some MPI 2014 and 2010 calculations |
 | plot.py | bar chart of regional MPI based on Cambodia DHS 2014 |
 | postprocess.py | compiles regional/cluster-level data files and joins compiled tables to shapefiles |
+| postprocess_summarize_mpi.py | compiles MPI-related outputs (from khm_dhs_mpi_hmn_cluster.do), summarize missingness info, save as CSV |
 | setup.do | test importing mpi calculation packages |
 | tha* | Thailand scripts |
 | v* | Vietnam scripts |
