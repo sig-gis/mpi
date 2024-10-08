@@ -1,6 +1,6 @@
 ********************************************************************************
 /*
-Citation:
+Adapted from:
 Oxford Poverty and Human Development Initiative (OPHI), University of Oxford. 
 2021 Global Multidimensional Poverty Index - Cambodia DHS 2010 [STATA do-file]. 
 Available from OPHI website: http://ophi.org.uk/  
