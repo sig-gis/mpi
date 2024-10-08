@@ -1,6 +1,6 @@
 ********************************************************************************
 /*
-Citation:
+Adapted from:
 Oxford Poverty and Human Development Initiative (OPHI), University of Oxford. 
 Global Multidimensional Poverty Index - Thailand MICS 2012 
 [STATA do-file]. Available from OPHI website: http://ophi.org.uk/  
@@ -11,12 +11,13 @@ For further queries, contact: ophi@qeh.ox.ac.uk
 
 clear all 
 set more off
-set maxvar 10000
+*set maxvar 10000
 
 
 
-global path_in "../rdta/Thailand MICS 2012"     // folder path
-global path_out "cdta"
+cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
+global path_in "../../data/MICS/Thailand_MICS4_Datasets/Thailand_MICS4_Datasets/Thailand MICS 2012-13 SPSS Datasets" 
+global path_out "../../data/MPI/tha_mics1213_test"
 global path_ado "ado"
 	
 	
@@ -30,7 +31,7 @@ global path_ado "ado"
 *** Step 1.1 CH - Children under 5 years
 ********************************************************************************
 
-use "$path_in/ch.dta", clear 
+import spss using "$path_in/ch.sav", clear 
 
 rename _all, lower	
 
@@ -203,11 +204,6 @@ sort ind_id
 save "$path_out/THA12_CH.dta", replace
 	
 	
-	//Erase files from folder:
-erase "$path_out/children_nutri_tha_z_rc.xls"
-erase "$path_out/children_nutri_tha_prev_rc.xls"
-erase "$path_out/children_nutri_tha_z_rc.dta"
-
 	
 
 ********************************************************************************
@@ -226,7 +222,7 @@ erase "$path_out/children_nutri_tha_z_rc.dta"
 /*The purpose of step 1.3 is to identify all deaths that are reported by 
 eligible women.*/
 
-use "$path_in/wm.dta", clear 
+import spss using "$path_in/wm.sav", clear 
 	
 rename _all, lower	
 
@@ -303,7 +299,7 @@ save "$path_out/THA12_WM.dta", replace
 ***(All households interviewed) 
 ********************************************************************************
 
-use "$path_in/hh.dta", clear 
+import spss using "$path_in/hh.sav", clear 
 	
 rename _all, lower	
 
@@ -324,7 +320,7 @@ save "$path_out/THA12_HH.dta", replace
 *** Step 1.6 HL - HOUSEHOLD MEMBER  
 ********************************************************************************
 
-use "$path_in/hl.dta", clear 
+import spss "$path_in/hl.sav", clear 
 
 rename _all, lower
 
@@ -361,7 +357,6 @@ sort ind_id
 merge 1:1 ind_id using "$path_out/THA12_WM.dta"
 count if hl7>0
 drop _merge	
-erase "$path_out/THA12_WM.dta"
 
 
 *** Merging HH Recode 
@@ -371,7 +366,6 @@ tab hh9 if _m==2
 drop  if _merge==2
 	//Drop households that were not interviewed 
 drop _merge
-erase "$path_out/THA12_HH.dta"
 
 
 *** Merging MN Recode 
@@ -393,7 +387,6 @@ label var marital_men "Marital status of household member"
 *****************************************
 merge 1:1 ind_id using "$path_out/THA12_CH.dta"
 drop _merge
-erase "$path_out/THA12_CH.dta"
 
 
 sort ind_id
