@@ -1,6 +1,6 @@
 ********************************************************************************
 /*
-Citation:
+Adapted from:
 Oxford Poverty and Human Development Initiative (OPHI), University of Oxford. 
 Global Multidimensional Poverty Index - Thailand MICS 2015-16 
 [STATA do-file]. Available from OPHI website: http://ophi.org.uk/  
@@ -11,12 +11,10 @@ For further queries, contact: ophi@qeh.ox.ac.uk
 
 clear all 
 set more off
-set maxvar 10000
 
 
-
-global path_in "../rdta/Thailand MICS 2015-16"     // folder path
-global path_out "cdta"
+global path_in "../../data/MICS/Thailand MICS5 and Thailand Selected 14 Provinces MICS5 Datasets/Thailand MICS5 Datasets/Thailand MICS5 Datasets/Thailand MICS5 SPSS Datasets" 	
+global path_out "../../data/MPI/tha_mics1516_test"
 global path_ado "ado"
 
 
@@ -31,7 +29,7 @@ global path_ado "ado"
 *** Step 1.1 CH - CHILDREN's RECODE (under 5)
 ********************************************************************************	
 
-use "$path_in/ch.dta", clear 
+import spss using "$path_in/ch.sav", clear
 
 rename _all, lower	
 
@@ -154,10 +152,6 @@ sort ind_id
 save "$path_out/THA15-16_CH.dta", replace
 
 
-	//Erase files from folder:
-erase "$path_out/children_nutri_tha_z_rc.xls"
-erase "$path_out/children_nutri_tha_prev_rc.xls"
-erase "$path_out/children_nutri_tha_z_rc.dta"
 	
 
 ********************************************************************************
@@ -173,7 +167,7 @@ erase "$path_out/children_nutri_tha_z_rc.dta"
 *** Step 1.3  WM - WOMEN's RECODE  
 *** (All eligible females 15-49 years in the household)
 ********************************************************************************
-use "$path_in/wm.dta", clear 
+import spss using "$path_in/wm.sav", clear 
 
 	
 rename _all, lower	
@@ -251,7 +245,7 @@ save "$path_out/THA15-16_WM.dta", replace
 ***(All eligible man: 15-59 years in the household) 
 ********************************************************************************
 
-use "$path_in/mn.dta", clear 
+import spss using "$path_in/mn.sav", clear 
 
 	
 rename _all, lower
@@ -322,7 +316,7 @@ save "$path_out/THA15-16_MN.dta", replace
 ***(All households interviewed) 
 ********************************************************************************
 
-use "$path_in/hh.dta", clear 
+import spss using "$path_in/hh.sav", clear 
 	
 rename _all, lower	
 
@@ -342,7 +336,7 @@ save "$path_out/THA15-16_HH.dta", replace
 *** Step 1.6 HL - HOUSEHOLD MEMBER  
 ********************************************************************************
 
-use "$path_in/hl.dta", clear 
+import spss using "$path_in/hl.sav", clear 
 	
 rename _all, lower
 
@@ -375,7 +369,6 @@ sort ind_id
 *****************************************
 merge 1:1 ind_id using "$path_out/THA15-16_WM.dta"
 drop _merge
-erase "$path_out/THA15-16_WM.dta"
 
 
 *** Merging HH Recode 
@@ -385,21 +378,18 @@ tab hh9 if _m==2
 drop  if _merge==2
 	//Drop households that were not interviewed 
 drop _merge
-erase "$path_out/THA15-16_HH.dta"
 
 
 *** Merging MN Recode 
 *****************************************
 merge 1:1 ind_id using "$path_out/THA15-16_MN.dta"
 drop _merge
-erase "$path_out/THA15-16_MN.dta"
 
 
 *** Merging CH Recode 
 *****************************************
 merge 1:1 ind_id using "$path_out/THA15-16_CH.dta"
 drop _merge
-erase "$path_out/THA15-16_CH.dta"
 
 
 sort ind_id
