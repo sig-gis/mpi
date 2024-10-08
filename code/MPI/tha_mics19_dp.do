@@ -1,6 +1,6 @@
 ********************************************************************************
 /*
-Citation:
+Adapted from:
 Oxford Poverty and Human Development Initiative (OPHI), University of Oxford. 
 Global Multidimensional Poverty Index - Thailand MICS 2019 
 [STATA do-file]. Available from OPHI website: http://ophi.org.uk/  
@@ -11,12 +11,12 @@ For further queries, contact: ophi@qeh.ox.ac.uk
 
 clear all 
 set more off
-set maxvar 10000
 
 
-
-global path_in "../rdta/Thailand MICS 2019"     // folder path
-global path_out "cdta"
+cd "C:\Users\tianc\OneDrive\Documents\SIG\DISES\code\MPI"
+global path_in "../../data/MICS/Thailand MICS6 and Thailand Selected 17 Provinces MICS6 Datasets/Thailand MICS6 Datasets/Thailand MICS6 Datasets/Thailand MICS6 SPSS Datasets" 	
+// global path_in "../../data/MICS/Thailand MICS6 and Thailand Selected 17 Provinces MICS6 Datasets/Thailand Selected 17 Provinces MICS6 Datasets/Thailand Selected 17 Provinces MICS6 Datasets" 	
+global path_out "../../data/MPI/tha_mics19_test"
 global path_ado "ado"
 
 	
@@ -30,7 +30,7 @@ global path_ado "ado"
 *** Step 1.1 CH - Children under 5 years
 ********************************************************************************
 
-use "$path_in/ch.dta", clear 
+import spss using "$path_in/ch.sav", clear
 
 rename _all, lower
 
@@ -39,7 +39,7 @@ rename _all, lower
 gen double ind_id = hh1*10000 + hh2*100 + ln 
 format ind_id %20.0g
 
-
+codebook ind_id
 duplicates report ind_id
  
 
@@ -212,11 +212,6 @@ order ind_id child_CH ln weight_ch underweight* stunting* wasting*
 sort ind_id
 save "$path_out/THA19_CH.dta", replace
 
-	
-	//Erase files from folder:
-erase "$path_out/children_nutri_tha_z_rc.xls"
-erase "$path_out/children_nutri_tha_prev_rc.xls"
-erase "$path_out/children_nutri_tha_z_rc.dta"
 
 	
 ********************************************************************************
@@ -233,7 +228,7 @@ erase "$path_out/children_nutri_tha_z_rc.dta"
 /*The purpose of step 1.3 is to identify all deaths that are reported by 
 eligible women.*/
 
-use "$path_in/wm.dta", clear 
+import spss using "$path_in/wm.sav", clear 
 	
 rename _all, lower	
 
@@ -312,7 +307,7 @@ save "$path_out/THA19_WM.dta", replace
 /*The purpose of step 1.4 is to identify all deaths that are reported by 
 eligible men.*/
 
-use "$path_in/mn.dta", clear 
+import spss using "$path_in/mn.sav", clear 
 
 rename _all, lower
 
@@ -389,7 +384,7 @@ save "$path_out/THA19_MN.dta", replace
 ***(All households interviewed) 
 ********************************************************************************
 
-use "$path_in/hh.dta", clear 
+import spss using "$path_in/hh.sav", clear 
 	
 rename _all, lower	
 
@@ -409,7 +404,7 @@ save "$path_out/THA19_HH.dta", replace
 *** Step 1.6 HL - HOUSEHOLD MEMBER  
 ********************************************************************************
 
-use "$path_in/hl.dta", clear 
+import spss using "$path_in/hl.sav", clear 
 
 rename _all, lower
 
@@ -454,7 +449,6 @@ count if hl8>0
 	the survey report (page ix) where it is reported that 26,002 women were 
 	eligible for interview. */
 drop _merge	
-erase "$path_out/THA19_WM.dta"
 
 
 *** Merging HH Recode 
@@ -464,21 +458,18 @@ tab hh46 if _m==2
 drop  if _merge==2
 	//Drop households that were not interviewed 
 drop _merge
-erase "$path_out/THA19_HH.dta"
 
 
 *** Merging MN Recode 
 *****************************************
 merge 1:1 ind_id using "$path_out/THA19_MN.dta"
 drop _merge
-erase "$path_out/THA19_MN.dta"
 
 
 *** Merging CH Recode 
 *****************************************
 merge 1:1 ind_id using "$path_out/THA19_CH.dta"
 drop _merge
-erase "$path_out/THA19_CH.dta"
 
 
 sort ind_id
