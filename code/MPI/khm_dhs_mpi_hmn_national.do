@@ -9,14 +9,6 @@ foreach year in 00 05 10 14 21-22 {
 	
 	// Get clusters to calculate MPIs for
 	use "$path_data/khm_dhs`year'.dta", clear 
-	levelsof psu, local(clust_nos)
-	// For each cluster
-	foreach clust_no in `clust_nos' {
-		display `clust_no'
-		
-		// Get data of the cluster
-		use "$path_data/khm_dhs`year'.dta", clear 
-		keep if psu == `clust_no'
 
 		// Calculate MPI
 		// with code adapted from Benin_dhs17-18.do	
@@ -168,19 +160,6 @@ foreach year in 00 05 10 14 21-22 {
 			sum c_censured_vector_`j'_33 [iw = weight] if sample_`j'==1
 			gen MPI_`j' = r(mean)
 			lab var MPI_`j' "`j' Multidimensional Poverty Index (MPI = H*A): Range 0 to 1"
-		}
-
-		*** Standard error *** 
-		svyset hh_id
-		svy: mean c_censured_vector_1_33
-		matrix table = r(table)
-		gen MPI_1_svy = table[rownumb(table, "b"), 1]
-		gen MPI_1_SE = table[rownumb(table, "se"), 1]
-		gen MPI_1_low95CI = table[rownumb(table, "ll"), 1]
-		gen MPI_1_upp95CI = table[rownumb(table, "ul"), 1]
-
-
-		save "$path_data/khm_dhs`year'_mpi_clust`clust_no'.dta", replace
 	}
 }
 
