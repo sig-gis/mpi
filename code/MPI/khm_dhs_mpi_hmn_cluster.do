@@ -159,26 +159,36 @@ foreach year in 00 05 10 14 21-22 {
 
 		*** Multidimensional Poverty Index (MPI) ***
 		foreach j of numlist 1 {
+			// Censured
 			foreach k of numlist 20 33 50 {
 				sum c_censured_vector_`j'_`k' [iw = weight] if sample_`j'==1
 				gen MPI_`j'_`k' = r(mean)
 				lab var MPI_`j'_`k' "MPI with k=`k'"
 			}
-			
-			sum c_censured_vector_`j'_33 [iw = weight] if sample_`j'==1
+			// Uncensured
+			sum c_vector_1 [iw = weight] if sample_`j'==1
 			gen MPI_`j' = r(mean)
 			lab var MPI_`j' "`j' Multidimensional Poverty Index (MPI = H*A): Range 0 to 1"
 		}
 
 		*** Standard error *** 
 		svyset hh_id
-		svy: mean c_censured_vector_1_33
+		// Uncensured
+		svy: mean c_vector_1
 		matrix table = r(table)
-		gen MPI_1_svy = table[rownumb(table, "b"), 1]
-		gen MPI_1_SE = table[rownumb(table, "se"), 1]
-		gen MPI_1_low95CI = table[rownumb(table, "ll"), 1]
-		gen MPI_1_upp95CI = table[rownumb(table, "ul"), 1]
-
+		gen MPI_0 = table[rownumb(table, "b"), 1]
+		gen MPI_0_SE = table[rownumb(table, "se"), 1]
+		gen MPI_0_low95CI = table[rownumb(table, "ll"), 1]
+		gen MPI_0_upp95CI = table[rownumb(table, "ul"), 1]
+		// Censured
+		foreach k of numlist 20 33 50 {
+			svy: mean c_censured_vector_1_`k'
+			matrix table = r(table)
+			gen MPI_`k' = table[rownumb(table, "b"), 1]
+			gen MPI_`k'_SE = table[rownumb(table, "se"), 1]
+			gen MPI_`k'_low95CI = table[rownumb(table, "ll"), 1]
+			gen MPI_`k'_upp95CI = table[rownumb(table, "ul"), 1]
+		}
 
 		save "$path_data/khm_dhs`year'_mpi_clust`clust_no'.dta", replace
 	}
