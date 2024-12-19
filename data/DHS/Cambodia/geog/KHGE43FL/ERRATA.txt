@@ -1,0 +1,13 @@
+email sent March 2012
+
+Dear DHS GPS Data User,
+
+We are contacting you because you downloaded a previous version of the Cambodia 2000 DHS GPS data.  
+The data named KHGE42FL had substantial problems with the locations and identification of the the clusters.   
+These issues have been resolved in the newly issued data file KHGE43FL. 
+Please use these data for any analyses and disregard the previous data file.  
+We apologize for any confusion this may cause you.      
+
+MEASURE DHS
+GIS Team
+gpsrequests@measuredhs.com
